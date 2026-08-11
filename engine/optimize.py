@@ -13,9 +13,23 @@ from .metrics import compute_metrics
 from .strategy import Params, with_
 
 
-def prepare(data: dict) -> dict:
-    """enrich() every (symbol, interval) frame once."""
-    return {key: enrich(df) for key, df in data.items()}
+def prepare(data: dict, spy_data: dict | None = None) -> dict:
+    """enrich() every (symbol, interval) frame once.
+
+    If spy_data (interval -> SPY DataFrame) is given, attach an aligned
+    'mkt_ok' flag (SPY above its session VWAP) to every frame.
+    """
+    enriched = {key: enrich(df) for key, df in data.items()}
+    if spy_data:
+        for iv, sdf in spy_data.items():
+            SE = enrich(sdf)
+            flag = pd.Series(SE["close"] > SE["vwap"], index=SE["index"])
+            for (sym, kiv), E in enriched.items():
+                if kiv != iv:
+                    continue
+                aligned = flag.reindex(E["index"], method="ffill").fillna(False)
+                E["mkt_ok"] = aligned.to_numpy(bool)
+    return enriched
 
 
 def _split_enriched(E: dict, day_cut: int, part: str) -> dict:
@@ -47,7 +61,10 @@ def evaluate(enriched: dict, p: Params, symbols_filter: list[str] | None = None,
             if len(E["open"]) < 100:
                 continue
         all_trades.extend(simulate_symbol(sym, E, p))
-    curve, tdf = run_portfolio(all_trades)
+    curve, tdf = run_portfolio(all_trades, max_concurrent=p.max_concurrent,
+                               sizing_mode=p.sizing_mode,
+                               risk_per_trade_pct=p.risk_per_trade_pct,
+                               pos_leverage_cap=p.pos_leverage_cap)
     m = compute_metrics(curve, tdf)
     m.update({k: v for k, v in asdict(p).items()})
     m["_curve"] = curve

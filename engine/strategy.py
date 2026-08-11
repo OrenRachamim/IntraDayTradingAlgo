@@ -20,6 +20,8 @@ class Params:
     pullback_def: str = "lower_high"  # lower_high | red_or_lh
     min_pullback_bars: int = 1
     max_pullback_bars: int = 3
+    pullback_hold_ema: bool = False   # pullback low must hold above EMA fast
+    market_filter: bool = False       # only trade when SPY is above its session VWAP
     # filters
     rsi_filter: bool = False
     rsi_min: float = 50.0
@@ -42,6 +44,11 @@ class Params:
     entry_start_min: int = 9 * 60 + 35
     entry_end_min: int = 15 * 60 + 30
     eod_exit_min: int = 15 * 60 + 55
+    # portfolio sizing
+    sizing_mode: str = "risk"         # risk | notional
+    risk_per_trade_pct: float = 1.0   # % of equity risked per trade (risk mode)
+    pos_leverage_cap: float = 2.0     # max notional per position, in units of equity
+    max_concurrent: int = 4
 
     def label(self) -> str:
         d = asdict(self)
@@ -82,6 +89,10 @@ def scan_signals(E: dict, p: Params) -> np.ndarray:
     trend = E["ema_fast"] > E["ema_slow"]
     if p.require_above_vwap:
         trend &= close > E["vwap"]
+    if p.pullback_hold_ema:
+        trend &= low >= E["ema_fast"]
+    if p.market_filter and "mkt_ok" in E:
+        trend &= E["mkt_ok"]
     if p.rsi_filter:
         trend &= (E["rsi"] >= p.rsi_min) & (E["rsi"] <= p.rsi_max)
     if p.macd_filter:

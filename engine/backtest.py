@@ -30,6 +30,7 @@ class Trade:
     ret_pct: float          # net of costs
     bars_held: int
     reason: str             # stop | target | trail | eod
+    risk_pct: float = 1.0   # initial stop distance, % of entry (for risk sizing)
 
 
 def _initial_stop(E: dict, i: int, entry: float, pb_len: int, p: Params) -> float:
@@ -116,14 +117,21 @@ def simulate_symbol(symbol: str, E: dict, p: Params) -> list[Trade]:
         cost = 2 * COST_BPS_PER_SIDE / 1e4
         ret = (exit_px - entry) / entry - cost
         trades.append(Trade(symbol, idx[i], idx[j], round(entry, 4), round(exit_px, 4),
-                            ret * 100, j - i, reason))
+                            ret * 100, j - i, reason, 100.0 * risk / entry))
         busy_until = j
     return trades
 
 
 def run_portfolio(all_trades: list[Trade], start_equity: float = 100_000.0,
-                  max_concurrent: int = 4) -> tuple[pd.Series, pd.DataFrame]:
-    """Sequential portfolio simulation: each trade sized equity/max_concurrent.
+                  max_concurrent: int = 4, sizing_mode: str = "notional",
+                  risk_per_trade_pct: float = 1.0,
+                  pos_leverage_cap: float = 2.0) -> tuple[pd.Series, pd.DataFrame]:
+    """Sequential portfolio simulation.
+
+    sizing_mode:
+    - "notional": each trade gets equity/max_concurrent notional.
+    - "risk": notional = equity * risk_per_trade_pct / stop_distance_pct, capped at
+      pos_leverage_cap * equity (intraday margin). Standard day-trading sizing.
 
     Returns (daily equity curve, trades df with 'taken' flag).
     """
@@ -141,9 +149,18 @@ def run_portfolio(all_trades: list[Trade], start_equity: float = 100_000.0,
             continue
         taken[k] = True
         open_exits.append(row.exit_time)
-        alloc = equity / max_concurrent
+        if sizing_mode == "risk" and row.risk_pct > 0:
+            alloc = equity * (risk_per_trade_pct / row.risk_pct)
+            alloc = min(alloc, pos_leverage_cap * equity)
+        else:
+            alloc = equity / max_concurrent
         pnl = alloc * row.ret_pct / 100
         equity += pnl
+        if equity <= 0:            # blown up — stop taking trades
+            equity = 0.0
+            d = row.exit_time.normalize()
+            pnl_at[d] = pnl_at.get(d, 0.0) + pnl
+            break
         d = row.exit_time.normalize()
         pnl_at[d] = pnl_at.get(d, 0.0) + pnl
 

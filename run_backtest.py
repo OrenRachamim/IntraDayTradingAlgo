@@ -21,7 +21,9 @@ from engine.metrics import spy_benchmark
 RESULTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 
 UNIVERSE = ["TSLA", "NVDA", "AMD", "PLTR", "META", "COIN", "SMCI", "MARA",
-            "HOOD", "SOFI", "RIVN", "MU", "AVGO", "NFLX", "AAPL", "AMZN"]
+            "HOOD", "SOFI", "RIVN", "MU", "AVGO", "NFLX", "AAPL", "AMZN",
+            "MSFT", "GOOGL", "INTC", "MSTR", "RIOT", "UBER", "SHOP", "DKNG",
+            "ROKU", "AFRM", "NIO", "IONQ", "CRWD", "ORCL"]
 INTERVALS = ["1m", "5m", "15m", "30m"]
 
 PARAM_COLS = [f for f in Params.__dataclass_fields__]
@@ -62,8 +64,14 @@ def main() -> None:
         spy_daily_raw.columns = spy_daily_raw.columns.get_level_values(0)
     spy_daily = spy_daily_raw
 
-    print("\n=== 2. Precomputing indicators ===")
-    enriched = prepare(data)
+    print("\n=== 2. Precomputing indicators (incl. SPY regime flag) ===")
+    from engine.data import fetch_intraday
+    spy_data = {}
+    for iv in INTERVALS:
+        sdf = fetch_intraday("SPY", iv, 29 if iv == "1m" else 59)
+        if len(sdf) > 100:
+            spy_data[iv] = sdf
+    enriched = prepare(data, spy_data)
     print(f"  {len(enriched)} (symbol, timeframe) frames ready")
 
     base = Params()
@@ -92,10 +100,11 @@ def main() -> None:
         b = params_from_row(row)
         g2 += grid(b,
                    momentum_min_gain_atr=[1.0, 1.5],
-                   hod_day_gain_atr=[1.5, 2.5],
                    relvol_min=[1.0, 1.3, 1.7],
                    rsi_filter=[False, True],
                    macd_filter=[False, True],
+                   market_filter=[False, True],
+                   pullback_hold_ema=[False, True],
                    max_pullback_bars=[2, 3])
     # dedupe
     g2 = list(dict.fromkeys(g2))
@@ -117,10 +126,30 @@ def main() -> None:
     df3 = run_grid(enriched, g3, "iter3")
     save(df3, "iter3_fine_tuning.csv")
 
+    # ---------- Iteration 4: position sizing ----------
+    print("\n=== 5b. Iteration 4: risk-based sizing / concurrency ===")
+    g4 = []
+    for _, row in df3.head(3).iterrows():
+        b = params_from_row(row)
+        g4 += grid(b,
+                   sizing_mode=["notional", "risk"],
+                   risk_per_trade_pct=[0.5, 1.0, 1.5],
+                   pos_leverage_cap=[1.0, 2.0],
+                   max_concurrent=[2, 4])
+    g4 = list(dict.fromkeys(g4))
+    df3 = run_grid(enriched, g4, "iter4")
+    save(df3, "iter4_sizing.csv")
+
     # ---------- Robustness: train / validation ----------
-    print("\n=== 6. Train/validation robustness check on top-10 ===")
+    print("\n=== 6. Train/validation robustness check (deduped, diverse) ===")
+    signal_cols = [c for c in PARAM_COLS if c not in
+                   ("sizing_mode", "risk_per_trade_pct", "pos_leverage_cap", "max_concurrent")]
+    # best sizing variant per distinct signal config, then max 4 per timeframe
+    dedup = df3.drop_duplicates(subset=signal_cols, keep="first")
+    dedup = dedup.groupby("timeframe", sort=False).head(4)
+    dedup = dedup.sort_values("score", ascending=False).head(12)
     rows = []
-    for _, row in df3.head(10).iterrows():
+    for _, row in dedup.iterrows():
         p = params_from_row(row)
         tr = evaluate(enriched, p, part="train")
         va = evaluate(enriched, p, part="validation")
@@ -130,9 +159,12 @@ def main() -> None:
                      "train_trades": tr["n_trades"],
                      "val_ret": va["total_return_pct"], "val_pf": va["profit_factor"],
                      "val_trades": va["n_trades"],
-                     "robust": va["total_return_pct"] > 0 and va["profit_factor"] > 1.0})
+                     "robust": va["total_return_pct"] > 0 and va["profit_factor"] > 1.0
+                     and va["n_trades"] >= 8})
     dfr = pd.DataFrame(rows)
-    save(dfr, "robustness_train_validation.csv")
+    os.makedirs(RESULTS, exist_ok=True)
+    dfr.to_csv(os.path.join(RESULTS, "robustness_train_validation.csv"), index=False)
+    print("  saved results/robustness_train_validation.csv")
 
     robust = dfr[dfr["robust"]]
     chosen_row = (robust if len(robust) else dfr).iloc[0]
