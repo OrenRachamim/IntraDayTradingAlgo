@@ -81,6 +81,30 @@ are exactly where pullback-buying gets run over.
 micro-pullback edge lives specifically in retail-heavy, high-beta momentum names
 (the curated 30-symbol list), not in the broad index universe.
 
+### Morning scanner: dynamic in-play selection (`engine/scanner.py`)
+
+Static symbol features (ADR, gap frequency, volume volatility, dollar volume) turned
+out NOT to separate winners from losers (correlations ≈ 0 — the profitable "profile"
+is a **day-state**, not a symbol property). So the scanner works like a trader's
+10:00 ET watchlist build, using only information available at selection time:
+opening gap vs yesterday's close, move from open to 10:00, and early relative
+volume. Eligible = gap ≥ 3% OR (early move ≥ 2% AND early relvol ≥ 2); rank by
+score, keep top-K per day; trades allowed only on picks, only after 10:00.
+
+Results over the 21-day 1m window (SPY +4.03%):
+
+| Setup | Return | PF | Win rate | Trades | Max DD |
+|---|---|---|---|---|---|
+| Broad 150, no scanner | -28.25% | 0.77 | 28% | 257 | -37.4% |
+| Broad 150 + scanner K=5 | **+4.21%** | 1.14 | 40% | 40 | -5.7% |
+| Curated 30 + scanner K=3 | **+6.62%** | 1.62 | 47% | 15 | **-1.6%** |
+| Curated 30, no scanner | +9.56% | 1.34 | 36% | 55 | -4.1% |
+
+Selectivity is everything: K=5 works, K=8/12 lose again. The scanner turns the
+broad universe from disastrous to market-beating, and on the curated universe it
+gives the best risk-adjusted result of the whole project (return/maxDD ≈ 4.1,
+PF 1.62). Larger K dilutes straight back into the noise.
+
 ## Run
 
 ```bash
