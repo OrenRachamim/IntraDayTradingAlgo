@@ -51,6 +51,7 @@ def simulate_symbol(symbol: str, E: dict, p: Params) -> list[Trade]:
     day, minute, atr_arr = E["day"], E["minute"], E["atr"]
     n = len(o)
     signals = scan_signals(E, p)
+    runs = E["lh_runs"] if p.pullback_def == "lower_high" else E["pb_runs"]
     trades: list[Trade] = []
     busy_until = -1  # bar index until which we're in a trade
 
@@ -61,7 +62,7 @@ def simulate_symbol(symbol: str, E: dict, p: Params) -> list[Trade]:
         entry = max(o[i], trigger)
         if entry > h[i]:          # never traded through the trigger
             continue
-        pb_len = int(E["lh_runs"][i - 1])
+        pb_len = int(runs[i - 1])
         stop = _initial_stop(E, i, entry, pb_len, p)
         risk = entry - stop
         if risk <= 0 or risk / entry > 0.03:

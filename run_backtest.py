@@ -68,30 +68,31 @@ def main() -> None:
 
     base = Params()
 
-    # ---------- Iteration 1: risk geometry ----------
-    print("\n=== 3. Iteration 1: timeframe x stop x target x trailing ===")
+    # ---------- Iteration 1: structure & risk geometry ----------
+    print("\n=== 3. Iteration 1: timeframe x momentum-mode x pullback-def x stop x trail ===")
     tfs = ["5m", "15m"] if quick else ["1m", "5m", "15m", "30m"]
     g1 = []
     for tf in tfs:
         g1 += grid(with_(base, timeframe=tf),
-                   stop_mode=["pullback_low", "atr", "pct"],
-                   target_rr=[1.5, 2.0, 3.0],
-                   trail_mode=["none", "atr", "pct"])
+                   momentum_mode=["surge", "hod", "either"],
+                   pullback_def=["lower_high", "red_or_lh"],
+                   stop_mode=["pullback_low", "atr"],
+                   trail_mode=["none", "pct"])
     df1 = run_grid(enriched, g1, "iter1")
     save(df1, "iter1_risk_geometry.csv")
 
     best1 = params_from_row(df1.iloc[0])
-    top_tfs = list(df1.head(8)["timeframe"].unique())[:2]
-    print(f"  top timeframes: {top_tfs}; best stop={best1.stop_mode} rr={best1.target_rr} "
-          f"trail={best1.trail_mode}")
+    print(f"  best: tf={best1.timeframe} mode={best1.momentum_mode} pb={best1.pullback_def} "
+          f"stop={best1.stop_mode} trail={best1.trail_mode}")
 
     # ---------- Iteration 2: signal quality ----------
-    print("\n=== 4. Iteration 2: surge / volume / RSI / MACD / pullback / timing ===")
+    print("\n=== 4. Iteration 2: surge / volume / RSI / MACD / pullback length ===")
     g2 = []
     for _, row in df1.head(4).iterrows():
         b = params_from_row(row)
         g2 += grid(b,
-                   momentum_min_gain_atr=[1.0, 1.5, 2.0],
+                   momentum_min_gain_atr=[1.0, 1.5],
+                   hod_day_gain_atr=[1.5, 2.5],
                    relvol_min=[1.0, 1.3, 1.7],
                    rsi_filter=[False, True],
                    macd_filter=[False, True],
@@ -107,10 +108,10 @@ def main() -> None:
     for _, row in df2.head(3).iterrows():
         b = params_from_row(row)
         g3 += grid(b,
-                   target_rr=[b.target_rr - 0.5, b.target_rr, b.target_rr + 0.5],
-                   stop_cap_pct=[1.0, 1.5, 2.0],
+                   target_rr=[1.5, 2.0, 2.5, 3.0],
+                   trail_pct=[0.3, 0.5],
                    trail_activate_rr=[0.5, 1.0],
-                   entry_start_min=[9 * 60 + 35, 9 * 60 + 45],
+                   stop_cap_pct=[1.0, 1.5],
                    entry_end_min=[12 * 60, 15 * 60 + 30])
     g3 = list(dict.fromkeys(g3))
     df3 = run_grid(enriched, g3, "iter3")

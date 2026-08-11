@@ -55,6 +55,44 @@ def lower_high_runs(high: np.ndarray) -> np.ndarray:
     return runs
 
 
+def pullback_runs(open_: np.ndarray, close: np.ndarray, high: np.ndarray) -> np.ndarray:
+    """Looser pullback: consecutive bars that are red OR make a lower high."""
+    n = len(high)
+    runs = np.zeros(n, dtype=np.int32)
+    for i in range(1, n):
+        if close[i] < open_[i] or high[i] < high[i - 1]:
+            runs[i] = runs[i - 1] + 1
+    return runs
+
+
+def session_cummax(high: np.ndarray, day: np.ndarray) -> np.ndarray:
+    """Running high-of-day."""
+    out = np.empty_like(high)
+    cur = -np.inf
+    prev_day = -1
+    for i in range(len(high)):
+        if day[i] != prev_day:
+            cur = high[i]
+            prev_day = day[i]
+        else:
+            cur = max(cur, high[i])
+        out[i] = cur
+    return out
+
+
+def session_open(open_: np.ndarray, day: np.ndarray) -> np.ndarray:
+    """First open of each session, broadcast across the day."""
+    out = np.empty_like(open_)
+    cur = open_[0]
+    prev_day = -1
+    for i in range(len(open_)):
+        if day[i] != prev_day:
+            cur = open_[i]
+            prev_day = day[i]
+        out[i] = cur
+    return out
+
+
 def enrich(df: pd.DataFrame, ema_fast: int = 9, ema_slow: int = 20,
            rsi_period: int = 14, atr_period: int = 14, relvol_window: int = 20) -> dict:
     """Precompute all indicator arrays for one (symbol, timeframe) frame.
@@ -66,7 +104,14 @@ def enrich(df: pd.DataFrame, ema_fast: int = 9, ema_slow: int = 20,
     idx = df.index
     day_codes = pd.factorize(idx.normalize())[0]
     minutes = idx.hour * 60 + idx.minute
+    o_arr = df["Open"].to_numpy(float)
+    h_arr = df["High"].to_numpy(float)
+    c_arr = close.to_numpy(float)
+    day_arr = np.asarray(day_codes)
     return {
+        "hod": session_cummax(h_arr, day_arr),
+        "day_open": session_open(o_arr, day_arr),
+        "pb_runs": pullback_runs(o_arr, c_arr, h_arr),
         "index": idx,
         "open": df["Open"].to_numpy(float),
         "high": df["High"].to_numpy(float),

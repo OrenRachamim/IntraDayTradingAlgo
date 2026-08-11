@@ -1,0 +1,11 @@
+timeframe,require_above_vwap,momentum_mode,momentum_lookback,momentum_min_gain_atr,hod_dist_atr,hod_day_gain_atr,relvol_min,pullback_def,min_pullback_bars,max_pullback_bars,rsi_filter,rsi_min,rsi_max,macd_filter,macd_rising,stop_mode,stop_atr_mult,stop_pct,stop_cap_pct,target_mode,target_rr,target_pct,trail_mode,trail_atr_mult,trail_pct,trail_activate_rr,entry_start_min,entry_end_min,eod_exit_min
+15m,True,surge,4,1.5,1.0,1.5,1.3,lower_high,1,3,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,2.0,1.0,none,1.5,0.5,0.5,575,930,955
+15m,True,surge,4,1.5,1.0,1.5,1.3,lower_high,1,3,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,2.0,1.0,none,1.5,0.5,1.0,575,930,955
+15m,True,surge,4,1.5,1.0,1.5,1.3,lower_high,1,3,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,2.0,1.0,none,1.5,0.3,1.0,575,930,955
+15m,True,surge,4,1.5,1.0,1.5,1.3,lower_high,1,3,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,2.0,1.0,none,1.5,0.3,0.5,575,930,955
+15m,True,surge,4,1.5,1.0,2.5,1.3,lower_high,1,3,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,2.0,1.0,none,1.5,0.3,0.5,575,930,955
+15m,True,surge,4,1.5,1.0,2.5,1.3,lower_high,1,3,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,2.0,1.0,none,1.5,0.3,1.0,575,930,955
+15m,True,surge,4,1.5,1.0,2.5,1.3,lower_high,1,3,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,2.0,1.0,none,1.5,0.5,1.0,575,930,955
+15m,True,surge,4,1.5,1.0,2.5,1.3,lower_high,1,3,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,2.0,1.0,none,1.5,0.5,0.5,575,930,955
+15m,True,surge,4,1.5,1.0,2.5,1.3,lower_high,1,2,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,3.0,1.0,none,1.5,0.3,0.5,575,930,955
+15m,True,surge,4,1.5,1.0,2.5,1.3,lower_high,1,2,True,50.0,80.0,True,False,pullback_low,1.0,0.5,1.5,rr,3.0,1.0,none,1.5,0.3,1.0,575,930,955

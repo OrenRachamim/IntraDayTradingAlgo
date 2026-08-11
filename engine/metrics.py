@@ -41,7 +41,7 @@ def compute_metrics(curve: pd.Series, trades: pd.DataFrame, start_equity: float 
         if len(dr) > 2 and dr.std() > 0:
             out["sharpe"] = float(dr.mean() / dr.std() * np.sqrt(252))
     # objective: return minus drawdown penalty; gated on sample size & PF
-    if out["n_trades"] >= 30 and out["profit_factor"] > 1.0:
+    if out["n_trades"] >= 50 and out["profit_factor"] > 1.0:
         out["score"] = out["total_return_pct"] + 0.5 * out["max_dd_pct"]  # max_dd is negative
     else:
         out["score"] = out["total_return_pct"] + 0.5 * out["max_dd_pct"] - 50.0

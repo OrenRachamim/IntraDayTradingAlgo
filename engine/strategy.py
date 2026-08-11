@@ -11,9 +11,13 @@ class Params:
     timeframe: str = "5m"
     # trend / signal
     require_above_vwap: bool = True
+    momentum_mode: str = "surge"      # surge | hod | either
     momentum_lookback: int = 4        # bars over which the surge is measured
     momentum_min_gain_atr: float = 1.5  # surge strength, in ATRs
+    hod_dist_atr: float = 1.0         # 'hod' mode: max distance from high-of-day, in ATRs
+    hod_day_gain_atr: float = 2.0     # 'hod' mode: min day gain from open, in ATRs
     relvol_min: float = 1.3           # relative volume on the surge bar
+    pullback_def: str = "lower_high"  # lower_high | red_or_lh
     min_pullback_bars: int = 1
     max_pullback_bars: int = 3
     # filters
@@ -64,8 +68,16 @@ def scan_signals(E: dict, p: Params) -> np.ndarray:
     gain = np.empty(n)
     gain[:] = np.nan
     gain[lb:] = close[lb:] - close[:-lb]
-    surge = (gain >= p.momentum_min_gain_atr * E["atr"]) & (E["relvol"] >= p.relvol_min) \
-        & (close > E["open"])
+    surge_raw = (gain >= p.momentum_min_gain_atr * E["atr"]) & (close > E["open"])
+    hod_ctx = ((E["hod"] - close) <= p.hod_dist_atr * E["atr"]) \
+        & ((close - E["day_open"]) >= p.hod_day_gain_atr * E["atr"])
+    if p.momentum_mode == "surge":
+        surge = surge_raw
+    elif p.momentum_mode == "hod":
+        surge = hod_ctx
+    else:  # either
+        surge = surge_raw | hod_ctx
+    surge &= E["relvol"] >= p.relvol_min
 
     trend = E["ema_fast"] > E["ema_slow"]
     if p.require_above_vwap:
@@ -80,7 +92,7 @@ def scan_signals(E: dict, p: Params) -> np.ndarray:
             rising[1:] = mh[1:] > mh[:-1]
             trend &= rising
 
-    L = E["lh_runs"]
+    L = E["lh_runs"] if p.pullback_def == "lower_high" else E["pb_runs"]
     i = np.arange(n)
     prev = i - 1
     valid = i >= (lb + p.max_pullback_bars + 2)
