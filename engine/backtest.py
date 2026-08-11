@@ -48,7 +48,7 @@ def _initial_stop(E: dict, i: int, entry: float, pb_len: int, p: Params) -> floa
 
 def _subbar_stop_first(sub: dict, bar_time, stop: float, target: float) -> bool:
     """Resolve an ambiguous coarse bar with 1m data: True if the stop traded first."""
-    t0 = bar_time.value
+    t0 = pd.Timestamp(bar_time).as_unit("ns").value
     ts = sub["ts"]
     k0 = np.searchsorted(ts, t0)
     k1 = np.searchsorted(ts, t0 + sub["span_ns"])

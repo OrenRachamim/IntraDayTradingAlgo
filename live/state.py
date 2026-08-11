@@ -52,10 +52,10 @@ def _now() -> str:
 
 def set_flag(name: str, value: str, reason: str = "") -> None:
     with connect() as con:
-        con.execute("INSERT INTO flags(name value, updated, reason) VALUES(?,?,?,?) "
-                    "ON CONFLICT(name) DO UPDATE SET value=?, updated=?, reason=?"
-                    .replace("name value", "name, value"),
-                    (name, value, _now(), reason, value, _now(), reason))
+        con.execute("INSERT INTO flags(name, value, updated, reason) VALUES(?,?,?,?) "
+                    "ON CONFLICT(name) DO UPDATE SET value=excluded.value, "
+                    "updated=excluded.updated, reason=excluded.reason",
+                    (name, value, _now(), reason))
 
 
 def get_flag(name: str, default: str = "") -> str:

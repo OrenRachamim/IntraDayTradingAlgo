@@ -79,7 +79,8 @@ def evaluate(enriched: dict, p: Params, symbols_filter: list[str] | None = None,
             E1 = enriched.get((sym, "1m"))
             if E1 is not None:
                 span = {"5m": 5, "15m": 15, "30m": 30}[p.timeframe]
-                sub = {"ts": E1["index"].asi8, "high": E1["high"], "low": E1["low"],
+                sub = {"ts": E1["index"].as_unit("ns").asi8,
+                       "high": E1["high"], "low": E1["low"],
                        "span_ns": span * 60 * 1_000_000_000}
         all_trades.extend(simulate_symbol(sym, E, p, sub=sub))
     curve, tdf = run_portfolio(all_trades, max_concurrent=p.max_concurrent,

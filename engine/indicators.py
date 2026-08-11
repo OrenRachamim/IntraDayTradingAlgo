@@ -14,7 +14,9 @@ def rsi(close: pd.Series, period: int = 14) -> pd.Series:
     gain = delta.clip(lower=0).ewm(alpha=1 / period, adjust=False).mean()
     loss = (-delta.clip(upper=0)).ewm(alpha=1 / period, adjust=False).mean()
     rs = gain / loss.replace(0, np.nan)
-    return (100 - 100 / (1 + rs)).fillna(50.0)
+    out = 100 - 100 / (1 + rs)
+    out[(loss == 0) & (gain > 0)] = 100.0   # pure uptrend, no losses
+    return out.fillna(50.0)
 
 
 def macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
