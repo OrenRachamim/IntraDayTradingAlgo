@@ -27,6 +27,7 @@ class Params:
     in_play_gain_adr: float = 0.5     # day gain from open >= this fraction of avg daily range
     in_play_relvol: float = 1.3       # cumulative day volume vs usual at this time
     min_adr_pct: float = 0.0          # min avg daily range (fraction, e.g. 0.02 = 2%)
+    scanner_filter: bool = False      # only trade (symbol, day) pairs picked by the scanner
     # filters
     rsi_filter: bool = False
     rsi_min: float = 50.0
@@ -106,6 +107,8 @@ def scan_signals(E: dict, p: Params) -> np.ndarray:
         trend &= E["day_relvol"] >= p.in_play_relvol
     if p.min_adr_pct > 0:
         trend &= (E["adr_pct"] >= p.min_adr_pct) & (E["adr_pct"] < 90.0)
+    if p.scanner_filter and "scan_ok" in E:
+        trend &= E["scan_ok"]
     if p.rsi_filter:
         trend &= (E["rsi"] >= p.rsi_min) & (E["rsi"] <= p.rsi_max)
     if p.macd_filter:
