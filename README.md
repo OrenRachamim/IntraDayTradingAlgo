@@ -27,12 +27,28 @@ PLAN.md          strategy research & full testing plan
 results/         per-iteration grids, final trades, equity curve, SUMMARY.md
 ```
 
+## Results (period 2026-05-15 → 2026-08-10, 30-symbol universe)
+
+| Window | Strategy | SPY same window | Profit factor | Trades |
+|---|---|---|---|---|
+| Full period | **+6.24%** | +4.56% | 1.23 | 66 |
+| Train (first 70% of days) | +1.97% | +2.09% | 1.17 | 48 |
+| Validation (last 30%) | **+4.19%** | +3.31% | 1.44 | 18 |
+| Walk-forward OOS (strict) | +1.20% | +5.43% | 1.21 | 28 |
+
+The decisive discovery of the optimization campaign: the Micro Pullback edge only
+exists on **stocks in play** — names whose day gain and cumulative volume are already
+elevated versus their own norms (both computed without lookahead). Details, the full
+iteration history, and honest caveats: `results/SUMMARY.md`.
+
 ## Run
 
 ```bash
 pip install -r requirements.txt
-python run_backtest.py          # full pipeline (all 4 timeframes)
-python run_backtest.py --quick  # 5m/15m only, faster
+python run_final_report.py      # evaluate the final chosen ensemble + write SUMMARY.md
+python run_backtest.py          # full 4-iteration optimization pipeline from scratch
+python run_walkforward.py       # strict walk-forward OOS evaluation
+python run_inplay_scan.py       # focused robust scan around the in-play region
 ```
 
 The pipeline automatically:

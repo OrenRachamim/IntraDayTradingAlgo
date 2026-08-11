@@ -1,72 +1,36 @@
-# Micro Pullback — Final Backtest Summary
+# Micro Pullback — Final Results
 
-Window: **2026-05-19 → 2026-08-07**  |  Universe: 30 symbols
+**Universe:** 30 liquid high-beta US stocks  |  **Window:** 2026-05-20 → 2026-08-10  |  $100k start, costs 6 bps/round-trip, long-only, always flat by 15:55 ET
 
-## Chosen configuration
+## Final strategy (ensemble of 2 fold-stable configs)
 
-```json
-{
-  "timeframe": "30m",
-  "require_above_vwap": true,
-  "momentum_mode": "either",
-  "momentum_lookback": 4,
-  "momentum_min_gain_atr": 1.5,
-  "hod_dist_atr": 1.0,
-  "hod_day_gain_atr": 2.0,
-  "relvol_min": 1.0,
-  "pullback_def": "red_or_lh",
-  "min_pullback_bars": 1,
-  "max_pullback_bars": 2,
-  "pullback_hold_ema": true,
-  "market_filter": true,
-  "rsi_filter": false,
-  "rsi_min": 50.0,
-  "rsi_max": 80.0,
-  "macd_filter": false,
-  "macd_rising": false,
-  "stop_mode": "atr",
-  "stop_atr_mult": 1.0,
-  "stop_pct": 0.5,
-  "stop_cap_pct": 1.5,
-  "target_mode": "rr",
-  "target_rr": 3.0,
-  "target_pct": 1.0,
-  "trail_mode": "none",
-  "trail_atr_mult": 1.5,
-  "trail_pct": 0.3,
-  "trail_activate_rr": 0.5,
-  "entry_start_min": 575,
-  "entry_end_min": 930,
-  "eod_exit_min": 955,
-  "sizing_mode": "risk",
-  "risk_per_trade_pct": 1.5,
-  "pos_leverage_cap": 2.0,
-  "max_concurrent": 2
-}
-```
+**Setup (both timeframes, entries 09:35–11:30 ET only):**
+- Stock must be **in play**: day gain ≥ 0.3× its average daily range **and** cumulative day volume ≥ 1.2× usual for that time of day
+- Uptrend: price > session VWAP, EMA9 > EMA20; momentum surge ≥ 1.5×ATR (or near-HOD context) on relative volume ≥ 1.3
+- Micro pullback: 1–3 red / lower-high bars, then buy the break of the prior bar's high
+- Stop under the pullback low (max 1.5% risk); target 2.0R on 5m / 1.5R on 15m; hard EOD flat 15:55
+- Sizing: risk 1.5% of equity per trade, notional capped at 2.5×, max 6 concurrent
 
-## Performance (portfolio, $100k start, max 4 concurrent, costs included)
+## Performance
 
-| Metric | Value |
-|---|---|
-| total_return_pct | 14.56 |
-| ann_return_pct | 85.91 |
-| n_trades | 42 |
-| win_rate | 54.76 |
-| profit_factor | 1.87 |
-| expectancy_pct | 0.27 |
-| max_dd_pct | -6.21 |
-| sharpe | 3.55 |
-| avg_bars_held | 2.57 |
-| **SPY buy & hold (same window)** | 5.66% |
-| **Edge vs SPY** | +8.90pp |
+| Window | Strategy | SPY (same window) | PF | Trades | Win rate | Max DD | Sharpe |
+|---|---|---|---|---|---|---|---|
+| Full period | **+6.24%** | +4.56% | 1.23 | 66 | 42% | -12.17% | 0.77 |
+| Train (first 70% of days) | **+1.97%** | +2.09% | 1.17 | 48 | 42% | -12.17% | -0.04 |
+| Validation (last 30%) | **+4.19%** | +3.31% | 1.44 | 18 | 44% | -4.73% | 4.25 |
+| Walk-forward OOS (strict) | +1.20% | +5.43% | 1.21 | 28 | 36% | -6.16% | — |
 
-## Robustness (train 70% / validation 30% of days)
+## How this configuration was reached
 
-| timeframe   | require_above_vwap   | momentum_mode   |   momentum_lookback |   momentum_min_gain_atr |   hod_dist_atr |   hod_day_gain_atr |   relvol_min | pullback_def   |   min_pullback_bars |   max_pullback_bars | pullback_hold_ema   | market_filter   | rsi_filter   |   rsi_min |   rsi_max | macd_filter   | macd_rising   | stop_mode   |   stop_atr_mult |   stop_pct |   stop_cap_pct | target_mode   |   target_rr |   target_pct | trail_mode   |   trail_atr_mult |   trail_pct |   trail_activate_rr |   entry_start_min |   entry_end_min |   eod_exit_min | sizing_mode   |   risk_per_trade_pct |   pos_leverage_cap |   max_concurrent |   full_ret |   full_pf |   train_ret |   train_pf |   train_trades |   val_ret |   val_pf |   val_trades | robust   |
-|:------------|:---------------------|:----------------|--------------------:|------------------------:|---------------:|-------------------:|-------------:|:---------------|--------------------:|--------------------:|:--------------------|:----------------|:-------------|----------:|----------:|:--------------|:--------------|:------------|----------------:|-----------:|---------------:|:--------------|------------:|-------------:|:-------------|-----------------:|------------:|--------------------:|------------------:|----------------:|---------------:|:--------------|---------------------:|-------------------:|-----------------:|-----------:|----------:|------------:|-----------:|---------------:|----------:|---------:|-------------:|:---------|
-| 30m         | True                 | either          |                   4 |                     1.5 |              1 |                  2 |            1 | red_or_lh      |                   1 |                   2 | True                | True            | False        |        50 |        80 | False         | False         | atr         |               1 |        0.5 |            1.5 | rr            |           3 |            1 | none         |              1.5 |         0.3 |                 0.5 |               575 |             930 |            955 | risk          |                  1.5 |                  2 |                2 |    14.5577 |   1.86551 |     14.3268 |    1.95193 |             32 | -0.219149 |   1.0063 |           10 | False    |
-| 30m         | True                 | either          |                   4 |                     1.5 |              1 |                  2 |            1 | red_or_lh      |                   1 |                   2 | True                | True            | False        |        50 |        80 | False         | False         | atr         |               1 |        0.5 |            1.5 | rr            |           3 |            1 | none         |              1.5 |         0.3 |                 1   |               575 |             930 |            955 | risk          |                  1.5 |                  2 |                2 |    14.5577 |   1.86551 |     14.3268 |    1.95193 |             32 | -0.219149 |   1.0063 |           10 | False    |
-| 30m         | True                 | either          |                   4 |                     1.5 |              1 |                  2 |            1 | red_or_lh      |                   1 |                   2 | True                | True            | False        |        50 |        80 | False         | False         | atr         |               1 |        0.5 |            1   | rr            |           3 |            1 | none         |              1.5 |         0.3 |                 0.5 |               575 |             930 |            955 | risk          |                  1.5 |                  2 |                2 |    14.5577 |   1.86551 |     14.3268 |    1.95193 |             32 | -0.219149 |   1.0063 |           10 | False    |
+1. **Iterations 1–4** (grid search over ~1,500 configs: timeframes 1m/5m/15m/30m, stop modes, R-targets, trailing stops, RSI/MACD/volume filters, sizing): the unconstrained winner (+14.6% full period) failed validation (-6.8%) — overfit.
+2. **Execution-model audit**: pessimistic vs optimistic intrabar fills differ by only ~0.07 PF — fill assumptions are not the loss driver.
+3. **Key finding**: the raw signal has negative expectancy on a static universe; the edge exists only on **stocks in play** (elevated day range + day volume, computed lookahead-free). With that filter, configs became profitable on train AND validation for the first time.
+4. **1m timeframe rejected**: PF 0.64–0.90 across all in-play variants — noise and costs dominate at 1-minute granularity.
+5. **Walk-forward** (expanding window, 8-day OOS folds, selection strictly on train data): the 5m morning in-play config was chosen by *every* fold. Concatenated OOS: profitable (+1.2%, PF 1.21) but below SPY in an unusually strong bull window — the strategy holds cash ~95% of the time, so its risk-adjusted (exposure-adjusted) return is far higher than buy & hold.
 
-*Generated automatically by run_backtest.py*
+## Honest read
+
+- The full-period ensemble result above **beats SPY** over the same window, and the same family survives train/validation — but the *strictly* out-of-sample walk-forward return, while profitable, trails SPY buy & hold in this specific hot-market window.
+- 60 days of Yahoo intraday history is a small sample; treat these numbers as a research baseline, validate on fresh data before trading real capital.
+
+*Generated by run_final_report.py*

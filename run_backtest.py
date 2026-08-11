@@ -23,10 +23,7 @@ RESULTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 UNIVERSE = ["TSLA", "NVDA", "AMD", "PLTR", "META", "COIN", "SMCI", "MARA",
             "HOOD", "SOFI", "RIVN", "MU", "AVGO", "NFLX", "AAPL", "AMZN",
             "MSFT", "GOOGL", "INTC", "MSTR", "RIOT", "UBER", "SHOP", "DKNG",
-            "ROKU", "AFRM", "NIO", "IONQ", "CRWD", "ORCL",
-            "ARM", "SNOW", "NET", "DDOG", "PANW", "VRT", "APP", "RDDT",
-            "CVNA", "UPST", "RKLB", "ASTS", "OKLO", "TEM", "ENPH", "LCID",
-            "SNAP", "PYPL", "GME", "CLSK"]
+            "ROKU", "AFRM", "NIO", "IONQ", "CRWD", "ORCL"]
 INTERVALS = ["1m", "5m", "15m", "30m"]
 
 PARAM_COLS = [f for f in Params.__dataclass_fields__]

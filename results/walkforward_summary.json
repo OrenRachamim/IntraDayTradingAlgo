@@ -1,0 +1,69 @@
+{
+  "oos_metrics": {
+    "n_trades": 28,
+    "win_rate": 35.714285714285715,
+    "profit_factor": 1.2079878476448953,
+    "expectancy_pct": 0.1318088079082596,
+    "avg_win_pct": 2.1435176714037603,
+    "avg_loss_pct": -0.9858072273670186,
+    "total_return_pct": 1.203795741616398,
+    "ann_return_pct": 9.738277419332043,
+    "max_dd_pct": -6.1554541742056275,
+    "sharpe": -0.784538193067812,
+    "avg_bars_held": 13.107142857142858,
+    "score": -12.873931345486415
+  },
+  "spy_oos_ret_pct": 5.4266051487155575,
+  "folds": [
+    {
+      "fold": "25-33",
+      "top_tf": "5m",
+      "top_rr": 2.0,
+      "top_end": 690,
+      "top_gain_adr": 0.3,
+      "train_score": -8.022833545775146,
+      "oos_n": 7,
+      "oos_avg_ret": 0.38788216305025597
+    },
+    {
+      "fold": "33-41",
+      "top_tf": "5m",
+      "top_rr": 2.0,
+      "top_end": 690,
+      "top_gain_adr": 0.3,
+      "train_score": -3.4755162377398454,
+      "oos_n": 6,
+      "oos_avg_ret": 0.14349857629897247
+    },
+    {
+      "fold": "41-49",
+      "top_tf": "5m",
+      "top_rr": 2.0,
+      "top_end": 690,
+      "top_gain_adr": 0.3,
+      "train_score": -0.9156938472096314,
+      "oos_n": 7,
+      "oos_avg_ret": 0.06565079995561307
+    },
+    {
+      "fold": "49-57",
+      "top_tf": "5m",
+      "top_rr": 2.0,
+      "top_end": 690,
+      "top_gain_adr": 0.3,
+      "train_score": 1.0021949073698764,
+      "oos_n": 6,
+      "oos_avg_ret": -0.19881149156780156
+    },
+    {
+      "fold": "57-59",
+      "top_tf": "5m",
+      "top_rr": 2.0,
+      "top_end": 690,
+      "top_gain_adr": 0.3,
+      "train_score": 3.8841968981777546,
+      "oos_n": 2,
+      "oos_avg_ret": 0.4238966860015796
+    }
+  ]
+}

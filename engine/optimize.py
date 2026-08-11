@@ -32,9 +32,16 @@ def prepare(data: dict, spy_data: dict | None = None) -> dict:
     return enriched
 
 
-def _split_enriched(E: dict, day_cut: int, part: str) -> dict:
-    """Slice an enriched dict by day code for train/validation splits."""
-    mask = E["day"] < day_cut if part == "train" else E["day"] >= day_cut
+def _split_enriched(E: dict, day_cut, part: str = "range") -> dict:
+    """Slice an enriched dict by day code.
+
+    day_cut: int with part 'train'/'validation', or a (lo, hi) tuple selecting
+    lo <= day < hi directly.
+    """
+    if isinstance(day_cut, tuple):
+        mask = (E["day"] >= day_cut[0]) & (E["day"] < day_cut[1])
+    else:
+        mask = E["day"] < day_cut if part == "train" else E["day"] >= day_cut
     out = {}
     for k, v in E.items():
         if k == "index":
@@ -47,17 +54,24 @@ def _split_enriched(E: dict, day_cut: int, part: str) -> dict:
 
 
 def evaluate(enriched: dict, p: Params, symbols_filter: list[str] | None = None,
-             part: str | None = None, split_frac: float = 0.7) -> dict:
-    """Run one param set across the universe at p.timeframe; return metrics row."""
+             part=None, split_frac: float = 0.7) -> dict:
+    """Run one param set across the universe at p.timeframe; return metrics row.
+
+    part: None (full period), 'train'/'validation' (70/30 day split), or a
+    (lo, hi) day-code tuple for walk-forward folds.
+    """
     all_trades = []
     for (sym, iv), E in enriched.items():
         if iv != p.timeframe:
             continue
         if symbols_filter and sym not in symbols_filter:
             continue
-        if part:
-            cut = int(E["day"].max() * split_frac) + 1
-            E = _split_enriched(E, cut, part)
+        if part is not None:
+            if isinstance(part, tuple):
+                E = _split_enriched(E, part)
+            else:
+                cut = int(E["day"].max() * split_frac) + 1
+                E = _split_enriched(E, cut, part)
             if len(E["open"]) < 100:
                 continue
         sub = None
