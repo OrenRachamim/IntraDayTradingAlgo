@@ -93,6 +93,35 @@ def session_open(open_: np.ndarray, day: np.ndarray) -> np.ndarray:
     return out
 
 
+def day_context(df: pd.DataFrame, day: np.ndarray, lookback_days: int = 10) -> tuple[np.ndarray, np.ndarray]:
+    """Per-bar (adr_pct, day_relvol):
+
+    adr_pct  – average daily range %% of the previous `lookback_days` sessions.
+    day_relvol – today's cumulative volume so far vs the same-elapsed-bar-count
+                 average cumulative volume of the previous sessions (no lookahead).
+    """
+    d = pd.Series(day, index=df.index)
+    day_high = df["High"].groupby(d).transform("max")
+    day_low = df["Low"].groupby(d).transform("min")
+    day_close = df["Close"].groupby(d).transform("last")
+    per_day = pd.DataFrame({
+        "rng": (day_high - day_low) / day_close, "day": d,
+    }).groupby("day").first()
+    adr_by_day = per_day["rng"].rolling(lookback_days, min_periods=3).mean().shift(1)
+    adr = d.map(adr_by_day).to_numpy(float)
+
+    barpos = pd.Series(np.arange(len(df)), index=df.index).groupby(d).cumcount()
+    cumvol = df["Volume"].groupby(d).cumsum()
+    # average cumvol at the same bar position over previous sessions
+    key = pd.MultiIndex.from_arrays([d, barpos])
+    cv = pd.Series(cumvol.to_numpy(float), index=key)
+    avg_by_pos = cv.groupby(level=1).apply(
+        lambda s: s.droplevel(1).rolling(lookback_days, min_periods=3).mean().shift(1))
+    avg = avg_by_pos.reorder_levels([1, 0]).reindex(key).to_numpy(float)
+    day_rv = np.divide(cumvol.to_numpy(float), avg, out=np.ones(len(df)), where=avg > 0)
+    return np.nan_to_num(adr, nan=99.0), day_rv
+
+
 def enrich(df: pd.DataFrame, ema_fast: int = 9, ema_slow: int = 20,
            rsi_period: int = 14, atr_period: int = 14, relvol_window: int = 20) -> dict:
     """Precompute all indicator arrays for one (symbol, timeframe) frame.
@@ -108,10 +137,13 @@ def enrich(df: pd.DataFrame, ema_fast: int = 9, ema_slow: int = 20,
     h_arr = df["High"].to_numpy(float)
     c_arr = close.to_numpy(float)
     day_arr = np.asarray(day_codes)
+    adr_pct, day_relvol = day_context(df, day_arr)
     return {
         "hod": session_cummax(h_arr, day_arr),
         "day_open": session_open(o_arr, day_arr),
         "pb_runs": pullback_runs(o_arr, c_arr, h_arr),
+        "adr_pct": adr_pct,
+        "day_relvol": day_relvol,
         "index": idx,
         "open": df["Open"].to_numpy(float),
         "high": df["High"].to_numpy(float),

@@ -21,7 +21,11 @@ class Params:
     min_pullback_bars: int = 1
     max_pullback_bars: int = 3
     pullback_hold_ema: bool = False   # pullback low must hold above EMA fast
+    max_retrace_atr: float = 99.0     # max pullback depth from pre-pullback high, in ATRs
     market_filter: bool = False       # only trade when SPY is above its session VWAP
+    in_play_filter: bool = False      # only trade "stocks in play" today
+    in_play_gain_adr: float = 0.5     # day gain from open >= this fraction of avg daily range
+    in_play_relvol: float = 1.3       # cumulative day volume vs usual at this time
     # filters
     rsi_filter: bool = False
     rsi_min: float = 50.0
@@ -44,6 +48,8 @@ class Params:
     entry_start_min: int = 9 * 60 + 35
     entry_end_min: int = 15 * 60 + 30
     eod_exit_min: int = 15 * 60 + 55
+    # execution model for bars containing both stop and target
+    intrabar: str = "pessimistic"     # pessimistic | optimistic | subbar
     # portfolio sizing
     sizing_mode: str = "risk"         # risk | notional
     risk_per_trade_pct: float = 1.0   # % of equity risked per trade (risk mode)
@@ -93,6 +99,10 @@ def scan_signals(E: dict, p: Params) -> np.ndarray:
         trend &= low >= E["ema_fast"]
     if p.market_filter and "mkt_ok" in E:
         trend &= E["mkt_ok"]
+    if p.in_play_filter:
+        day_gain = close / E["day_open"] - 1
+        trend &= day_gain >= p.in_play_gain_adr * E["adr_pct"]
+        trend &= E["day_relvol"] >= p.in_play_relvol
     if p.rsi_filter:
         trend &= (E["rsi"] >= p.rsi_min) & (E["rsi"] <= p.rsi_max)
     if p.macd_filter:

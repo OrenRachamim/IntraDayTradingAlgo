@@ -46,7 +46,25 @@ def _initial_stop(E: dict, i: int, entry: float, pb_len: int, p: Params) -> floa
     return min(stop, entry - TICK)
 
 
-def simulate_symbol(symbol: str, E: dict, p: Params) -> list[Trade]:
+def _subbar_stop_first(sub: dict, bar_time, stop: float, target: float) -> bool:
+    """Resolve an ambiguous coarse bar with 1m data: True if the stop traded first."""
+    t0 = bar_time.value
+    ts = sub["ts"]
+    k0 = np.searchsorted(ts, t0)
+    k1 = np.searchsorted(ts, t0 + sub["span_ns"])
+    for k in range(k0, k1):
+        s_hit = sub["low"][k] <= stop
+        t_hit = sub["high"][k] >= target
+        if s_hit and t_hit:
+            return True   # both inside one minute -> pessimistic
+        if s_hit:
+            return True
+        if t_hit:
+            return False
+    return True           # no 1m coverage -> pessimistic
+
+
+def simulate_symbol(symbol: str, E: dict, p: Params, sub: dict | None = None) -> list[Trade]:
     idx = E["index"]
     o, h, l, c = E["open"], E["high"], E["low"], E["close"]
     day, minute, atr_arr = E["day"], E["minute"], E["atr"]
@@ -64,6 +82,10 @@ def simulate_symbol(symbol: str, E: dict, p: Params) -> list[Trade]:
         if entry > h[i]:          # never traded through the trigger
             continue
         pb_len = int(runs[i - 1])
+        if p.max_retrace_atr < 99:
+            depth = h[i - 1 - pb_len] - float(np.min(l[i - pb_len:i]))
+            if depth > p.max_retrace_atr * atr_arr[i - 1]:
+                continue
         stop = _initial_stop(E, i, entry, pb_len, p)
         risk = entry - stop
         if risk <= 0 or risk / entry > 0.03:
@@ -93,21 +115,22 @@ def simulate_symbol(symbol: str, E: dict, p: Params) -> list[Trade]:
                     eff_stop = max(eff_stop, ts)
 
             entry_bar = (j == i)
-            # pessimistic: stop checked before target
-            if l[j] <= eff_stop and not (entry_bar and o[j] > eff_stop and l[j] > eff_stop):
-                px = min(eff_stop, o[j]) if not entry_bar else eff_stop
-                exit_px = px
+            hit_stop = l[j] <= eff_stop
+            hit_target = h[j] >= target if not entry_bar else (h[j] >= target and c[j] >= target)
+            if hit_stop and hit_target:
+                # ambiguous bar: resolve by execution model
+                if p.intrabar == "optimistic":
+                    hit_stop = False
+                elif p.intrabar == "subbar" and sub is not None:
+                    hit_stop = _subbar_stop_first(sub, idx[j], eff_stop, target)
+                # pessimistic (default): stop first
+            if hit_stop:
+                exit_px = min(eff_stop, o[j]) if not entry_bar else eff_stop
                 reason = "trail" if (trail_armed and eff_stop > stop) else "stop"
                 break
-            if h[j] >= target and not entry_bar:
+            if hit_target:
                 exit_px, reason = target, "target"
                 break
-            if entry_bar and h[j] >= target and entry < target:
-                # target hit on entry bar only counts if bar closed above trigger path;
-                # keep pessimistic: require close >= target too
-                if c[j] >= target:
-                    exit_px, reason = target, "target"
-                    break
             if minute[j] >= p.eod_exit_min or j == n - 1:
                 exit_px, reason = c[j], "eod"
                 break

@@ -60,7 +60,14 @@ def evaluate(enriched: dict, p: Params, symbols_filter: list[str] | None = None,
             E = _split_enriched(E, cut, part)
             if len(E["open"]) < 100:
                 continue
-        all_trades.extend(simulate_symbol(sym, E, p))
+        sub = None
+        if p.intrabar == "subbar" and p.timeframe != "1m":
+            E1 = enriched.get((sym, "1m"))
+            if E1 is not None:
+                span = {"5m": 5, "15m": 15, "30m": 30}[p.timeframe]
+                sub = {"ts": E1["index"].asi8, "high": E1["high"], "low": E1["low"],
+                       "span_ns": span * 60 * 1_000_000_000}
+        all_trades.extend(simulate_symbol(sym, E, p, sub=sub))
     curve, tdf = run_portfolio(all_trades, max_concurrent=p.max_concurrent,
                                sizing_mode=p.sizing_mode,
                                risk_per_trade_pct=p.risk_per_trade_pct,

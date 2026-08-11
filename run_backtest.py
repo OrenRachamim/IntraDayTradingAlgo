@@ -23,7 +23,10 @@ RESULTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 UNIVERSE = ["TSLA", "NVDA", "AMD", "PLTR", "META", "COIN", "SMCI", "MARA",
             "HOOD", "SOFI", "RIVN", "MU", "AVGO", "NFLX", "AAPL", "AMZN",
             "MSFT", "GOOGL", "INTC", "MSTR", "RIOT", "UBER", "SHOP", "DKNG",
-            "ROKU", "AFRM", "NIO", "IONQ", "CRWD", "ORCL"]
+            "ROKU", "AFRM", "NIO", "IONQ", "CRWD", "ORCL",
+            "ARM", "SNOW", "NET", "DDOG", "PANW", "VRT", "APP", "RDDT",
+            "CVNA", "UPST", "RKLB", "ASTS", "OKLO", "TEM", "ENPH", "LCID",
+            "SNAP", "PYPL", "GME", "CLSK"]
 INTERVALS = ["1m", "5m", "15m", "30m"]
 
 PARAM_COLS = [f for f in Params.__dataclass_fields__]
@@ -41,6 +44,8 @@ def save(df: pd.DataFrame, name: str) -> None:
 def params_from_row(row: pd.Series) -> Params:
     kw = {}
     for f, spec in Params.__dataclass_fields__.items():
+        if f not in row.index:
+            continue  # keep dataclass default
         v = row[f]
         t = spec.type
         if t == "bool" or isinstance(spec.default, bool):
