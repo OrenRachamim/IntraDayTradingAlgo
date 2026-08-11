@@ -62,6 +62,25 @@ which is why the earlier quick scan rejected the timeframe. Caveat: only ~21 tra
 days of 1m history exist on Yahoo, so this is thinner evidence than the 59-day
 5m/15m results; the production ensemble remains 5m+15m.
 
+### Broad-universe test: the 1m edge does NOT generalize (important negative result)
+
+Running the same robust 1m ensemble on a broad volume-filtered universe — S&P 500 +
+Nasdaq-100 + liquid extras, avg dollar volume ≥ $150M/day, price ≥ $5, top 150 by
+liquidity (`run_1m_broad.py`, `engine/universe.py`) — **loses -28.25%** (PF 0.77,
+257 trades) over the same window where the curated universe made +9.56%.
+
+Per-symbol diagnosis (`results/broad1m_*.csv`): the original high-beta names stay
+positive inside the broad run (+0.024%/trade across 49 trades), while the ~120
+added index names lose broadly and uniformly (-0.072%/trade across 212 trades —
+MPWR, WDC, MRVL, CRM, CMCSA…, no single outlier). Volatility gates don't rescue it:
+requiring avg daily range ≥ 4% improves PF only to 0.86, and tightening the in-play
+gates on top makes it *worse* (PF 0.11–0.54) — extreme days in institutional names
+are exactly where pullback-buying gets run over.
+
+**Conclusion:** volume filtering alone does not define the tradable universe. The
+micro-pullback edge lives specifically in retail-heavy, high-beta momentum names
+(the curated 30-symbol list), not in the broad index universe.
+
 ## Run
 
 ```bash

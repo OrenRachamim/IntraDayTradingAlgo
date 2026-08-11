@@ -95,7 +95,7 @@ def main() -> None:
             by_sym = taken.groupby("symbol")["ret_pct"].agg(["count", "sum"]) \
                 .sort_values("sum", ascending=False)
             print(f"  symbols traded: {len(by_sym)} | top contributors: "
-                  + ", ".join(f"{s} ({r.sum:+.1f}%/{int(r.count)}t)"
+                  + ", ".join(f"{s} ({r['sum']:+.1f}%/{int(r['count'])}t)"
                               for s, r in by_sym.head(5).iterrows()))
 
     print("\n=== 5. SPY benchmark over the same window ===")
