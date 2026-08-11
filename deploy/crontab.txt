@@ -1,0 +1,16 @@
+# IntraDayTradingAlgo — cron schedule (server timezone must be America/New_York,
+# or keep the CRON_TZ line below on a cron that supports it)
+# Install with:  crontab deploy/crontab.txt   (after editing paths)
+
+CRON_TZ=America/New_York
+ALGO=/opt/IntraDayTradingAlgo
+PY=/opt/IntraDayTradingAlgo/.venv/bin/python
+
+# live trading session — weekdays, engine starts 09:20 ET and exits itself ~16:05
+20 9 * * 1-5  cd $ALGO && $PY -m live.run_live >> state/logs/cron_live.log 2>&1
+
+# safety net — force-flatten in case the engine died mid-session
+58 15 * * 1-5 cd $ALGO && $PY -m live.run_live --flatten >> state/logs/cron_flatten.log 2>&1
+
+# weekly automated maintenance — Sunday 12:00 ET
+0 12 * * 0    cd $ALGO && $PY -m maintenance.run_maintenance >> state/logs/cron_maint.log 2>&1

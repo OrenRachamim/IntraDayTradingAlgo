@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 data_cache/
 .venv/
+state/
+reports/
+config.live.json

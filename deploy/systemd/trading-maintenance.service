@@ -1,0 +1,9 @@
+[Unit]
+Description=Weekly automated maintenance (universe/data refresh, walk-forward, health verdict)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/IntraDayTradingAlgo
+ExecStart=/opt/IntraDayTradingAlgo/.venv/bin/python -m maintenance.run_maintenance
+TimeoutStartSec=4h
+Environment=TZ=America/New_York

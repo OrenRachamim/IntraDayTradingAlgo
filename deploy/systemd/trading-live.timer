@@ -1,0 +1,9 @@
+[Unit]
+Description=Start live engine each US trading morning
+
+[Timer]
+OnCalendar=Mon..Fri 09:20 America/New_York
+Persistent=false
+
+[Install]
+WantedBy=timers.target

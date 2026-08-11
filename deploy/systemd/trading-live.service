@@ -1,0 +1,15 @@
+# systemd alternative to cron for the live session (paired with trading-live.timer)
+# install: sudo cp deploy/systemd/* /etc/systemd/system/ && sudo systemctl enable --now trading-live.timer
+[Unit]
+Description=IntraDay Micro Pullback live engine
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/IntraDayTradingAlgo
+ExecStart=/opt/IntraDayTradingAlgo/.venv/bin/python -m live.run_live
+TimeoutStartSec=8h
+Environment=TZ=America/New_York
+
+[Install]
+WantedBy=multi-user.target
