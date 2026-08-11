@@ -41,6 +41,27 @@ exists on **stocks in play** — names whose day gain and cumulative volume are 
 elevated versus their own norms (both computed without lookahead). Details, the full
 iteration history, and honest caveats: `results/SUMMARY.md`.
 
+### 1-minute timeframe study (window 2026-07-13 → 2026-08-10, 21 trading days)
+
+A dedicated 300-config study (`run_1m_study.py`) showed 1m demands much stricter
+signal quality than 5m/15m: **relvol ≥ 1.7, MACD histogram > 0, strict lower-high
+pullback ≤ 2 bars, surge mode, 3R target, no trailing, full-day entries**. With
+those filters (and the in-play gate):
+
+| Same 21-day window | Return | PF | Trades | Max DD |
+|---|---|---|---|---|
+| Best 1m config | **+9.56%** | 1.34 | 55 | -4.07% |
+| 1m runner-up (+RSI filter) | +9.16% | 1.35 | 53 | -4.07% |
+| 5m+15m production ensemble | +6.45% | 1.61 | 22 | — |
+| SPY buy & hold | +2.82% | — | — | — |
+
+The runner-up stays profitable on both the train (+7.8%, PF 1.47) and validation
+(+1.3%, PF 1.16) day-splits, and the edge survives costs (PF 1.75 gross → 1.35 at
+6 bps). Loose 1m variants (relvol ≤ 1.3, no MACD, ≤2R targets) lose consistently —
+which is why the earlier quick scan rejected the timeframe. Caveat: only ~21 trading
+days of 1m history exist on Yahoo, so this is thinner evidence than the 59-day
+5m/15m results; the production ensemble remains 5m+15m.
+
 ## Run
 
 ```bash
