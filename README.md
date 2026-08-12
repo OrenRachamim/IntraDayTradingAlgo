@@ -105,6 +105,27 @@ broad universe from disastrous to market-beating, and on the curated universe it
 gives the best risk-adjusted result of the whole project (return/maxDD ≈ 4.1,
 PF 1.62). Larger K dilutes straight back into the noise.
 
+### Market/sector regime gates at entry: tested, NOT adopted
+
+`run_regime_filters.py` tested hard entry gates — SPY>VWAP, QQQ>VWAP, the
+symbol's own sector ETF>VWAP (SMH/IBIT/XLK/XLY/XLF/XLC), and combinations — on
+both production engines (`results/regime_filters.csv`):
+
+- **5m+15m ensemble**: every gate slashed full-period return (+6.24% baseline →
+  -5.7%…-1.1%), all the damage in the train period; validation improved
+  (QQQ+sector: +7.73%, PF 3.36, but n=9).
+- **1m curated**: SPY gate improved PF (1.31→1.47) and drawdown (-5.8→-4.0%) at
+  similar return, but flipped validation negative; sector gates hurt everywhere.
+
+The effects flip sign between sub-periods on both engines — noise, not edge.
+Structural read: the system already validates regime at the *stock* level (the
+in-play/scanner gates demand the individual name be exceptionally strong today);
+in-play momentum is largely idiosyncratic, so broad-market gates mostly delete
+good trades (a stock ripping on its own news while SPY is red). `market_filter`
+remains available in `Params` but stays **off** in production. If market state is
+ever used, prefer it for position *sizing*, not binary entry blocking — and only
+after it proves itself on more data.
+
 ## Run
 
 ```bash
