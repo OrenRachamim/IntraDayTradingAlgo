@@ -87,3 +87,16 @@ def save_template() -> None:
 def hhmm_to_min(s: str) -> int:
     h, m = s.split(":")
     return int(h) * 60 + int(m)
+
+
+def now_et():
+    """Current time in US/Eastern — ALL schedule logic must use this, never the
+    machine's local clock (the host may run in any timezone)."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo("America/New_York"))
+
+
+def now_et_minute() -> int:
+    t = now_et()
+    return t.hour * 60 + t.minute

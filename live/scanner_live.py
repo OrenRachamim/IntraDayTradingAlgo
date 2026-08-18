@@ -14,12 +14,11 @@ score = max(gap,0) + max(early_move,0) + 0.1*early_rv; return the top K.
 """
 from __future__ import annotations
 
-from datetime import datetime
 
 import numpy as np
 
 from .broker import Broker
-from .config import LiveConfig
+from .config import LiveConfig, now_et
 from .notify import get_logger
 from . import state
 
@@ -47,9 +46,13 @@ def run_scanner(broker: Broker, cfg: LiveConfig) -> list[dict]:
     log = get_logger()
     symbols = broker.scan_candidates()
     log.info(f"scanner candidates from IBKR: {len(symbols)}")
-    now = datetime.now()
+    now = now_et()
     now_minute = now.hour * 60 + now.minute
+    if now_minute < 9 * 60 + 35:
+        log.warning("⚠️ scanner invoked before 09:35 ET — no RTH bars for today yet; "
+                    "any output below reflects the PREVIOUS session (research only)")
     rows = []
+    stale_sessions = 0
     for sym in symbols:
         try:
             c = broker.stock(sym)
@@ -58,6 +61,8 @@ def run_scanner(broker: Broker, cfg: LiveConfig) -> list[dict]:
                 continue
             days = df.index.normalize()
             today = days.unique()[-1]
+            if today.date() != now.date():
+                stale_sessions += 1     # market not open yet: last session is old
             tdf = df[days == today]
             if len(tdf) < 5:
                 continue
@@ -76,6 +81,9 @@ def run_scanner(broker: Broker, cfg: LiveConfig) -> list[dict]:
             broker.ib.sleep(0.2)
         except Exception as e:  # noqa: BLE001
             log.warning(f"scanner {sym} failed: {e}")
+    if stale_sessions:
+        log.warning(f"⚠️ {stale_sessions} symbols had no bars for today (ET) — "
+                    "their features are from the previous session")
     rows.sort(key=lambda r: r["score"], reverse=True)
     picks = rows[:cfg.scanner_top_k]
     state.log_scanner(str(now.date()), picks)

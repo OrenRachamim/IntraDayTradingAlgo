@@ -24,7 +24,7 @@ from engine.indicators import enrich
 from engine.strategy import Params, scan_signals
 
 from .broker import Broker
-from .config import LiveConfig, hhmm_to_min
+from .config import LiveConfig, hhmm_to_min, now_et, now_et_minute
 from .notify import notify, get_logger
 from . import state
 
@@ -58,7 +58,7 @@ class LiveEngine:
     def can_enter(self) -> bool:
         if self.killed or not state.trading_enabled():
             return False
-        now_min = datetime.now().hour * 60 + datetime.now().minute
+        now_min = now_et_minute()
         if now_min >= hhmm_to_min(self.cfg.entry_end):
             return False
         if self.trades_today >= self.cfg.max_trades_per_day:
@@ -74,7 +74,7 @@ class LiveEngine:
         dd = (eq - self.start_equity) / self.start_equity * 100
         if dd <= -self.cfg.daily_loss_limit_pct:
             self.killed = True
-            state.upsert_daily(str(date.today()), killed=1)
+            state.upsert_daily(str(now_et().date()), killed=1)
             notify(self.cfg, f"🛑 KILL SWITCH: day PnL {dd:.2f}% <= "
                              f"-{self.cfg.daily_loss_limit_pct}%. Flattening.", important=True)
             self.broker.flatten_all(reason="kill_switch")
@@ -144,13 +144,13 @@ class LiveEngine:
             notify(cfg, "⚠️ trading disabled by maintenance flag — monitoring only",
                    important=True)
         self.start_equity = self.broker.equity()
-        state.upsert_daily(str(date.today()), start_equity=self.start_equity)
+        state.upsert_daily(str(now_et().date()), start_equity=self.start_equity)
         notify(cfg, f"▶️ live engine up. equity ${self.start_equity:,.0f}, "
                     f"mode={'PAPER' if cfg.port in (4002, 7497) else 'LIVE'}")
 
         # wait for scanner time
         scan_min = hhmm_to_min(cfg.scan_time)
-        while datetime.now().hour * 60 + datetime.now().minute < scan_min:
+        while now_et_minute() < scan_min:
             self.broker.ib.sleep(10)
 
         from .scanner_live import run_scanner
@@ -171,7 +171,7 @@ class LiveEngine:
         while True:
             self.broker.ib.sleep(5)
             self.broker.ensure_connected()
-            now_min = datetime.now().hour * 60 + datetime.now().minute
+            now_min = now_et_minute()
             if now_min >= stop_min:
                 break
             if now_min >= flat_min and not flattened:
@@ -192,7 +192,7 @@ class LiveEngine:
                         self.log.error(f"{sym} on_bar_close error: {e}")
 
         eq = self.broker.equity()
-        state.upsert_daily(str(date.today()), end_equity=eq,
+        state.upsert_daily(str(now_et().date()), end_equity=eq,
                            realized_pnl=eq - self.start_equity,
                            n_trades=self.trades_today)
         notify(cfg, f"⏹ session done. equity ${eq:,.0f} "

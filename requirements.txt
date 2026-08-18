@@ -6,3 +6,4 @@ pyarrow>=14.0
 tabulate>=0.9
 ib_async>=1.0
 lxml>=4.9
+tzdata>=2024.1
