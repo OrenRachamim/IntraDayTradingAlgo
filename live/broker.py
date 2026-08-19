@@ -6,6 +6,7 @@ limit / protective stop children), cancel-all and flatten-all.
 """
 from __future__ import annotations
 
+import asyncio
 import time
 
 try:
@@ -66,12 +67,115 @@ class Broker:
         self.ib.qualifyContracts(c)
         return c
 
+    def stocks(self, symbols: list[str]) -> dict:
+        """Qualify many contracts in one round trip instead of one call each."""
+        cs = [Stock(s, "SMART", "USD") for s in symbols]
+        try:
+            self.ib.qualifyContracts(*cs)
+        except Exception as e:  # noqa: BLE001
+            self.log.warning(f"qualify batch failed: {e}")
+        return {c.symbol: c for c in cs if getattr(c, "conId", 0)}
+
+    SNAPSHOT_TICKS = "165"      # "misc stats", the only source of avVolume
+    SNAPSHOT_WAIT_S = 8.0
+    SNAPSHOT_CHUNK = 45         # stay clear of the account's market-data lines
+
+    def snapshots(self, contracts: list, chunk: int = 0) -> dict:
+        """Market-data snapshots as plain dicts keyed by symbol.
+
+        Carries today's open, the last trade, the previous session's close,
+        today's volume so far and the 90-day average daily volume -- enough for
+        gap, early move and a cheap relative-volume estimate. Historical bars
+        cost one request per symbol against IBKR's ~60-per-10-minutes budget;
+        this costs one subscription per symbol with no such limit.
+
+        Generic tick 165 is required: plain `reqTickers` leaves avVolume unset.
+        Values are copied out before the subscription is cancelled so the result
+        stays valid afterwards.
+        """
+        chunk = chunk or self.SNAPSHOT_CHUNK
+        out = {}
+        for i in range(0, len(contracts), chunk):
+            batch = contracts[i:i + chunk]
+            tickers = []
+            try:
+                tickers = [self.ib.reqMktData(c, self.SNAPSHOT_TICKS, False, False)
+                           for c in batch]
+                deadline = time.time() + self.SNAPSHOT_WAIT_S
+                while time.time() < deadline:
+                    self.ib.sleep(0.5)
+                    if all(t.open == t.open and t.close == t.close for t in tickers):
+                        break
+                for t in tickers:
+                    out[t.contract.symbol] = {
+                        "open": t.open, "close": t.close, "last": t.last,
+                        "market": t.marketPrice(), "volume": t.volume,
+                        "avvolume": t.avVolume,
+                    }
+            except Exception as e:  # noqa: BLE001
+                self.log.warning(f"snapshot batch failed: {e}")
+            finally:
+                for c in batch:
+                    try:
+                        self.ib.cancelMktData(c)
+                    except Exception:  # noqa: BLE001
+                        pass
+        return out
+
     def bars_1m(self, contract, duration: str = "2 D", keep_up_to_date: bool = False):
         """1m RTH bars; with keep_up_to_date=True the list live-updates in place."""
         return self.ib.reqHistoricalData(
             contract, endDateTime="", durationStr=duration, barSizeSetting="1 min",
             whatToShow="TRADES", useRTH=True, formatDate=2,
             keepUpToDate=keep_up_to_date)
+
+    HIST_CONCURRENCY = 4      # IBKR serialises historical requests internally
+    HIST_TIMEOUT_S = 120.0
+
+    def bars_1m_many(self, contracts: list, duration: str = "12 D") -> dict:
+        """1m bars for several contracts, keyed by symbol; empty results dropped.
+
+        A 12-day 1m request takes several seconds, so a dozen of them in series
+        dominates the morning scan. They are issued a few at a time instead:
+        IBKR queues historical requests internally, so firing all of them at
+        once just makes them time out -- and a timeout comes back as an EMPTY
+        list, not an error, which would silently corrupt any metric computed
+        from it. Symbols that return nothing are therefore dropped here, and
+        the caller must treat a missing key as "no data", never as a default.
+        """
+        if not contracts:
+            return {}
+
+        async def fetch(sem, c):
+            async with sem:
+                return await self.ib.reqHistoricalDataAsync(
+                    c, endDateTime="", durationStr=duration,
+                    barSizeSetting="1 min", whatToShow="TRADES", useRTH=True,
+                    formatDate=2, timeout=self.HIST_TIMEOUT_S)
+
+        async def gather_all():
+            sem = asyncio.Semaphore(self.HIST_CONCURRENCY)
+            return await asyncio.gather(*(fetch(sem, c) for c in contracts),
+                                        return_exceptions=True)
+
+        try:
+            results = self.ib.run(gather_all())
+        except Exception as e:  # noqa: BLE001
+            self.log.warning(f"parallel history failed ({e}); fetching serially")
+            results = [self.bars_1m(c, duration=duration) for c in contracts]
+
+        out, empty = {}, []
+        for c, r in zip(contracts, results):
+            if isinstance(r, BaseException):
+                self.log.warning(f"history {c.symbol} failed: {r}")
+            elif not r:
+                empty.append(c.symbol)
+            else:
+                out[c.symbol] = r
+        if empty:
+            self.log.warning(f"⚠️ no history returned for {len(empty)} symbols "
+                             f"({', '.join(empty)}) — excluded, not defaulted")
+        return out
 
     @staticmethod
     def bars_df(bars) -> pd.DataFrame:

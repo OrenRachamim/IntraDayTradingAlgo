@@ -1,5 +1,7 @@
 """Live-layer tests that need no IB Gateway: config, state DB, risk guards,
 params mapping, scanner math, broker bar conversion."""
+import io
+import logging
 import os
 import sqlite3
 from datetime import datetime
@@ -8,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import live.notify as notify
 import live.state as state
 from live.config import LiveConfig, hhmm_to_min, load_config
 from live.engine_live import LiveEngine, build_params
@@ -16,8 +19,18 @@ from tests.conftest import make_session
 
 
 @pytest.fixture(autouse=True)
-def isolated_db(tmp_path, monkeypatch):
+def isolated_state(tmp_path, monkeypatch):
+    """Keep tests out of the real state DB and out of the operational log.
+
+    Without the logger swap, exercising the risk guards writes lines like
+    "KILL SWITCH: day PnL -3.50%" into state/logs/live.log -- indistinguishable
+    from a real event when reading the log during a live session.
+    """
     monkeypatch.setattr(state, "DB_PATH", str(tmp_path / "test_live.db"))
+    quiet = logging.getLogger("live.tests")
+    quiet.handlers = [logging.NullHandler()]
+    quiet.propagate = False
+    monkeypatch.setattr(notify, "_log", quiet)
     yield
 
 
@@ -176,3 +189,106 @@ def test_bars_df_conversion():
     assert str(df.index.tz) in ("US/Eastern", "America/New_York")
     assert df.index[0].hour == 10 and df.index[0].minute == 30
     assert df["Close"].iloc[-1] == 102.5
+
+
+# ---------- scanner fast path ----------
+
+def test_snapshot_field_parsing_rejects_junk():
+    from live.scanner_live import _f
+    import math
+    assert _f(12.5) == 12.5
+    for junk in (None, "", float("nan"), -1.0, 0.0, "abc"):
+        assert math.isnan(_f(junk)), f"{junk!r} should be unusable"
+
+
+def test_score_matches_documented_formula():
+    from live.scanner_live import _score
+    assert _score(0.10, 0.05, 2.0) == pytest.approx(0.10 + 0.05 + 0.2)
+    # negatives are floored at zero, relvol still counts
+    assert _score(-0.10, -0.05, 3.0) == pytest.approx(0.3)
+
+
+def test_thin_history_drops_symbol_instead_of_defaulting():
+    """A short frame must yield None, never a neutral relvol.
+
+    Returning 1.0 would let a name whose history failed to arrive pass the
+    relative-volume gate on an invented number.
+    """
+    from live.scanner_live import _relvol_from
+    thin = make_session("2026-08-10", after="chop").head(50)
+    assert _relvol_from(thin, datetime(2026, 8, 10), 600) is None
+
+
+def test_relvol_returned_with_stale_flag_when_history_is_long_enough():
+    from live.scanner_live import _relvol_from
+    frames = [make_session(f"2026-08-{d:02d}", after="chop") for d in (3, 4, 5, 6, 7, 10)]
+    df = pd.concat(frames)
+    got = _relvol_from(df, datetime(2026, 8, 10), 24 * 60)
+    assert got is not None
+    rv, stale = got
+    assert rv > 0
+    assert stale is False          # last session in the frame IS 2026-08-10
+
+
+def test_est_relvol_scales_by_elapsed_session():
+    """The snapshot proxy must rank an in-play name above a quiet one."""
+    from live.scanner_live import _est_relvol
+    at_10 = 10 * 60
+    quiet = _est_relvol(volume=5e6, avvolume=120e6, now_minute=at_10)
+    in_play = _est_relvol(volume=29e6, avvolume=1.1e6, now_minute=at_10)
+    assert in_play > 50 * quiet
+    # later in the session the same volume is less remarkable
+    assert _est_relvol(5e6, 20e6, at_10) > _est_relvol(5e6, 20e6, 15 * 60)
+
+
+def test_est_relvol_is_zero_without_average_volume():
+    """A missing avVolume must not fabricate a rank."""
+    from live.scanner_live import _est_relvol
+    assert _est_relvol(1e6, float("nan"), 600) == 0.0
+    assert _est_relvol(float("nan"), 1e6, 600) == 0.0
+
+
+# ---------- dashboard must never state something it cannot know ----------
+
+def _render_to_text(panel) -> str:
+    from rich.console import Console
+    con = Console(width=100, file=io.StringIO(), force_terminal=False)
+    con.print(panel)
+    return con.file.getvalue()
+
+
+class _StubFeed:
+    """Minimal stand-in for IBFeed with a controllable portfolio result."""
+    def __init__(self, portfolio):
+        self._p = portfolio
+        from rich.text import Text
+        self.status = Text("stub")
+
+    def portfolio(self):
+        return self._p
+
+
+def test_positions_panel_says_unknown_when_broker_unreachable():
+    """A dead connection must never render as 'flat'.
+
+    Showing 'no open positions' while unable to reach the broker is the single
+    most dangerous thing this dashboard could claim.
+    """
+    from live.monitor import panel_positions
+    out = _render_to_text(panel_positions(_StubFeed(None)))
+    assert "UNKNOWN" in out
+    assert "flat" not in out.lower()
+
+
+def test_positions_panel_says_flat_only_when_confirmed_empty():
+    from live.monitor import panel_positions
+    out = _render_to_text(panel_positions(_StubFeed([])))
+    assert "flat" in out.lower()
+    assert "UNKNOWN" not in out
+
+
+def test_positions_panel_without_feed_asks_for_ib():
+    from live.monitor import panel_positions
+    out = _render_to_text(panel_positions(None))
+    assert "--ib" in out
+    assert "flat" not in out.lower()

@@ -67,6 +67,70 @@ def with_(p: Params, **kw) -> Params:
     return replace(p, **kw)
 
 
+def entry_gates(E: dict, p: Params, i: int) -> list[tuple[str, bool]]:
+    """Per-condition status for a candidate entry bar, in scan_signals' order.
+
+    Decomposes the single boolean scan_signals produces so a dashboard can say
+    *what is missing* rather than only "no signal". Every gate mirrors the
+    corresponding line in scan_signals; `test_entry_gates_match_scan_signals`
+    asserts that all gates passing is equivalent to a signal firing on bar i,
+    which is what keeps the two from drifting apart.
+    """
+    n = len(E["high"])
+    if i < 1 or i >= n:
+        return []
+    close, high, low = E["close"], E["high"], E["low"]
+    j = i - 1                       # every condition is judged one bar back
+    lb = p.momentum_lookback
+    L = E["lh_runs"] if p.pullback_def == "lower_high" else E["pb_runs"]
+
+    valid = i >= (lb + p.max_pullback_bars + 2)
+    pb_len = int(L[j]) if valid else 0
+    s = max(0, j - pb_len)          # the bar the surge must have happened on
+
+    gain = close[s] - close[s - lb] if s >= lb else float("-inf")
+    surge_raw = bool(gain >= p.momentum_min_gain_atr * E["atr"][s]
+                     and close[s] > E["open"][s])
+    hod_ctx = bool((E["hod"][s] - close[s]) <= p.hod_dist_atr * E["atr"][s]
+                   and (close[s] - E["day_open"][s]) >= p.hod_day_gain_atr * E["atr"][s])
+    surge = {"surge": surge_raw, "hod": hod_ctx}.get(
+        p.momentum_mode, surge_raw or hod_ctx)
+
+    g: list[tuple[str, bool]] = [("warmup", bool(valid))]
+    day = E["day"]
+    g.append(("session", bool(day[i] == day[j]
+                             and day[i] == day[max(0, s - lb)])))
+    if p.require_above_vwap:
+        g.append(("VWAP", bool(close[j] > E["vwap"][j])))
+    g.append(("EMA", bool(E["ema_fast"][j] > E["ema_slow"][j])))
+    if p.pullback_hold_ema:
+        g.append(("holdEMA", bool(low[j] >= E["ema_fast"][j])))
+    if p.macd_filter:
+        ok = bool(E["macd_hist"][j] > 0)
+        if p.macd_rising:
+            ok = ok and bool(E["macd_hist"][j] > E["macd_hist"][j - 1])
+        g.append(("MACD", ok))
+    if p.rsi_filter:
+        g.append(("RSI", bool(p.rsi_min <= E["rsi"][j] <= p.rsi_max)))
+    if p.market_filter and "mkt_ok" in E:
+        g.append(("market", bool(E["mkt_ok"][j])))
+    if p.in_play_filter:
+        g.append(("inplay", bool(close[j] / E["day_open"][j] - 1
+                                 >= p.in_play_gain_adr * E["adr_pct"][j]
+                                 and E["day_relvol"][j] >= p.in_play_relvol)))
+    if p.scanner_filter and "scan_ok" in E:
+        g.append(("scanner", bool(E["scan_ok"][j])))
+    if p.min_adr_pct > 0:
+        g.append(("ADR", bool(p.min_adr_pct <= E["adr_pct"][j] < 90.0)))
+    g.append(("surge", bool(surge)))
+    g.append(("relvol", bool(E["relvol"][s] >= p.relvol_min)))
+    g.append(("pullback", bool(p.min_pullback_bars <= pb_len <= p.max_pullback_bars)))
+    g.append(("breakout", bool(high[i] > high[j])))
+    minute = int(E["minute"][i])
+    g.append(("window", bool(p.entry_start_min <= minute <= p.entry_end_min)))
+    return g
+
+
 def scan_signals(E: dict, p: Params) -> np.ndarray:
     """Return indices of candidate entry bars (bar i breaks high of bar i-1).
 

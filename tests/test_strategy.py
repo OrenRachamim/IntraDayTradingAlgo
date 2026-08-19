@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from engine.indicators import enrich
-from engine.strategy import scan_signals, with_
+from engine.strategy import Params, scan_signals, with_
 from tests.conftest import BREAK, make_session
 
 
@@ -80,3 +80,39 @@ def test_no_signal_across_day_boundary(loose_params):
     sigs = scan_signals(E, loose_params)
     early_day2 = [s for s in sigs if n1 <= s < n1 + 8]
     assert not early_day2, f"signals fired within warmup bars of day 2: {early_day2}"
+
+
+# ---------- entry_gates mirrors scan_signals ----------
+
+def test_entry_gates_match_scan_signals():
+    """All gates passing must be exactly equivalent to a signal on that bar.
+
+    This is the guard against the dashboard's explanation drifting away from
+    the logic that actually places orders.
+    """
+    from engine.strategy import entry_gates, scan_signals
+
+    for after in ("rally", "dump", "chop"):
+        for params in (Params(),
+                       Params(macd_filter=True),
+                       Params(require_above_vwap=False, max_pullback_bars=2),
+                       Params(rsi_filter=True, relvol_min=1.0)):
+            E = enrich(make_session(after=after))
+            fired = set(scan_signals(E, params).tolist())
+            for i in range(1, len(E["high"])):
+                gates = entry_gates(E, params, i)
+                assert gates, f"no gates produced for bar {i}"
+                all_pass = all(ok for _, ok in gates)
+                assert all_pass == (i in fired), (
+                    f"bar {i} after={after}: gates say {all_pass}, "
+                    f"scan_signals says {i in fired}; "
+                    f"failing={[k for k, ok in gates if not ok]}")
+
+
+def test_entry_gates_name_the_missing_condition():
+    from engine.strategy import entry_gates
+    E = enrich(make_session(after="rally"))
+    # a bar with no breakout must report exactly that
+    quiet = 20
+    failing = [k for k, ok in entry_gates(E, Params(), quiet) if not ok]
+    assert "surge" in failing or "breakout" in failing or "pullback" in failing

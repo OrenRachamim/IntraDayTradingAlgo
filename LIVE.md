@@ -9,8 +9,17 @@ the edge degrades.
 ```
 09:20 ET  cron/systemd starts live.run_live
           connect to Gateway (retry loop) · check trading_enabled flag · log equity
-10:00 ET  morning scanner (live/scanner_live.py)
+10:00 ET  morning scanner (live/scanner_live.py), two stages
           IBKR native scanner (top % gainers + most active, price/volume filtered)
+          -> ONE market-data snapshot per chunk gives open / last / prev close,
+             i.e. gap and early move for every candidate at no historical cost
+          -> those names are ranked by an estimated score: gap, early move
+             and today's volume vs its 90-day average (generic tick 165),
+             scaled by elapsed session -- a stand-in for relative volume that
+             costs nothing, used ONLY to choose who gets examined
+          -> the top `scanner_deep_max` (default 12) get their 1m history
+             pulled; eligibility and the published score always use the real
+             relative volume computed from those bars
           -> score by gap / early move / early relative volume (same formula that
              was validated in backtest) -> top-K watchlist (default 3)
 10:01+    subscribe streaming 1m bars per watchlist symbol
@@ -52,6 +61,8 @@ max 12 entries/day, risk 1.5% equity per trade, notional ≤ 2.5× equity / slot
 
 | Command | Purpose |
 |---|---|
+| `python -m live.monitor --ib` | dashboard plus live prices, positions and a per-symbol **"needs for entry"** column (own clientId, reads only) |
+| `python -m live.monitor` | **read-only console dashboard** — phase clock, scanner picks, orders, fills, live log tail. Safe to run alongside a session (opens no IB connection) |
 | `python -m live.run_live --status` | connectivity, equity, open positions, flags, live stats |
 | `python -m live.run_live --scan-only` | dry-run the 10:00 scanner |
 | `python -m live.run_live --flatten` | emergency: cancel everything, market-out all positions |
@@ -89,3 +100,10 @@ flags) and `state/logs/` (rotating). Maintenance reports land in `reports/`.
 - Scanner candidates come from IBKR's screener (real-time, survivorship-free),
   while the backtest scanned a fixed 150-name universe — live coverage is wider.
 - Yahoo data feeds the *research* loop only; all live decisions use IBKR data.
+- IBKR allows only ~60 historical-data requests per ten minutes. The candidate
+  list routinely exceeds 60 names, so the scanner must not pull history per
+  candidate -- hence the snapshot screen above. If you raise `scanner_deep_max`,
+  keep the deep stage well under that budget or the scan will be throttled to a
+  crawl. A timed-out historical request returns an EMPTY list rather than an
+  error, so anything derived from it must drop the symbol, never substitute a
+  default.

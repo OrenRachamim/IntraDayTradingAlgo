@@ -18,6 +18,7 @@ class LiveConfig:
     port: int = 4002              # 4002 = Gateway paper, 4001 = Gateway live
     client_id: int = 17
     account: str = ""             # empty = first account on the connection
+    monitor_client_id: int = 97   # live.monitor --ib: must differ from client_id
 
     # --- session schedule (ET) ---
     scan_time: str = "10:00"      # morning scanner runs at this time
@@ -27,6 +28,7 @@ class LiveConfig:
 
     # --- scanner ---
     scanner_top_k: int = 3
+    scanner_deep_max: int = 12    # names whose 1m history is read for relvol
     gap_min: float = 0.03         # 3% opening gap qualifies
     move_min: float = 0.02        # or 2% move from open ...
     early_rv_min: float = 2.0     # ... on 2x usual cumulative volume
@@ -65,7 +67,7 @@ class LiveConfig:
 def load_config() -> LiveConfig:
     cfg = LiveConfig()
     if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH) as f:
+        with open(CONFIG_PATH, encoding="utf-8") as f:
             data = json.load(f)
         for k, v in data.items():
             if hasattr(cfg, k):
@@ -79,7 +81,7 @@ def load_config() -> LiveConfig:
 
 def save_template() -> None:
     if not os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, "w") as f:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump({k: v for k, v in asdict(LiveConfig()).items() if k != "extra"},
                       f, indent=2)
 
