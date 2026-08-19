@@ -394,3 +394,70 @@ def test_broker_sleep_reports_success_when_connected():
     b.ib = _LiveIB()
     b.log = notify.get_logger()
     assert b.sleep(0) is True
+
+
+# ---------- telegram fill alerts ----------
+
+def _fill(order_id, side, shares, avg=32.0, pnl=None):
+    from datetime import timezone
+    f = {"order_id": order_id, "side": side, "shares": float(shares), "avg": avg,
+         "symbol": "AMLX", "time": datetime(2026, 8, 18, 16, 45, tzinfo=timezone.utc)}
+    if pnl is not None:
+        f["pnl"] = pnl
+    return f
+
+
+def _alerter(monkeypatch, sent):
+    from live.monitor import FillAlerter
+    cfg = LiveConfig(telegram_bot_token="t", telegram_chat_id="c")
+    a = FillAlerter(cfg)
+    monkeypatch.setattr(a, "_send", lambda f: sent.append(f))
+    return a
+
+
+def test_alerter_stays_silent_on_the_first_poll(monkeypatch):
+    """Startup backfills the whole day; announcing it would bury the live one."""
+    sent = []
+    a = _alerter(monkeypatch, sent)
+    a.poll([_fill(1, "BOT", 15868), _fill(2, "SLD", 15868)])
+    assert sent == []
+
+
+def test_alerter_waits_for_partial_fills_to_settle(monkeypatch):
+    """Aggregate size grows between refreshes; one order must alert once."""
+    sent = []
+    a = _alerter(monkeypatch, sent)
+    a.poll([])                                     # prime
+    a.poll([_fill(7, "BOT", 5000)])                # still filling
+    assert sent == [], "must not announce a half-filled order"
+    a.poll([_fill(7, "BOT", 12000)])               # still growing
+    assert sent == []
+    a.poll([_fill(7, "BOT", 12000)])               # settled
+    assert len(sent) == 1 and sent[0]["shares"] == 12000
+    a.poll([_fill(7, "BOT", 12000)])               # never twice
+    assert len(sent) == 1
+
+
+def test_alerter_reports_both_sides(monkeypatch):
+    sent = []
+    a = _alerter(monkeypatch, sent)
+    a.poll([])
+    for _ in range(2):
+        a.poll([_fill(1, "BOT", 100), _fill(2, "SLD", 100, pnl=250.0)])
+    assert {f["side"] for f in sent} == {"BOT", "SLD"}
+
+
+def test_alerter_is_disarmed_without_telegram_config():
+    from live.monitor import FillAlerter
+    assert FillAlerter(LiveConfig()).armed is False
+    assert FillAlerter(LiveConfig(telegram_bot_token="t")).armed is False
+    assert FillAlerter(LiveConfig(telegram_bot_token="t", telegram_chat_id="c")).armed
+
+
+def test_send_telegram_no_ops_when_unconfigured(monkeypatch):
+    """An unconfigured push must not attempt a network call."""
+    import live.notify as n
+    called = []
+    monkeypatch.setattr(n.requests, "post", lambda *a, **k: called.append(a))
+    assert n.send_telegram(LiveConfig(), "hi") is False
+    assert called == []

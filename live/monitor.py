@@ -26,6 +26,7 @@ import os
 import re
 import sqlite3
 import sys
+import threading
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -320,7 +321,8 @@ class IBFeed:
             e, c = f.execution, f.contract
             key = (e.orderId, e.side, c.symbol)
             a = agg.setdefault(key, {"symbol": c.symbol, "side": e.side,
-                                     "shares": 0.0, "notional": 0.0, "time": e.time})
+                                     "order_id": e.orderId, "shares": 0.0,
+                                     "notional": 0.0, "time": e.time})
             a["shares"] += e.shares
             a["notional"] += e.shares * e.price
             a["time"] = max(a["time"], e.time)
@@ -424,6 +426,80 @@ def _num(v) -> bool:
     return v is not None and isinstance(v, (int, float)) and v == v and v > 0
 
 
+# ---------- fill alerts ----------
+
+class FillAlerter:
+    """Push a Telegram message for every completed broker fill.
+
+    This lives in the dashboard rather than the engine on purpose: the engine
+    only ever observes its own entry order, because the exits are OCA children
+    it hands to IBKR and never watches again. The broker's execution stream is
+    the only place both sides of a trade appear, and the dashboard is already
+    reading it.
+
+    Two things it must not do. It must not announce the backlog: the first poll
+    of a session backfills every execution of the day, and firing a message for
+    each would bury the one that matters. And it must not announce an order
+    twice -- fills arrive in partials, so the aggregate grows between refreshes;
+    an order is only reported once its size has stopped changing.
+    """
+
+    def __init__(self, cfg: LiveConfig):
+        self.cfg = cfg
+        self.sent = 0
+        self.failed = 0
+        self._seen: set = set()
+        self._sizes: dict = {}
+        self._primed = False
+
+    @property
+    def armed(self) -> bool:
+        from .notify import telegram_configured
+        return telegram_configured(self.cfg)
+
+    def poll(self, fills: list[dict]) -> list[dict]:
+        """Announce newly completed fills; returns the ones sent."""
+        current = {(f.get("order_id"), f["side"]): f for f in fills}
+
+        if not self._primed:            # adopt the session's history silently
+            self._seen = set(current)
+            self._sizes = {k: f["shares"] for k, f in current.items()}
+            self._primed = True
+            return []
+
+        announced = []
+        for key, f in current.items():
+            previous = self._sizes.get(key)
+            self._sizes[key] = f["shares"]
+            if key in self._seen:
+                continue
+            if previous is None or abs(previous - f["shares"]) > 1e-9:
+                continue                # still filling; wait for it to settle
+            self._seen.add(key)
+            announced.append(f)
+            self._send(f)
+        return announced
+
+    def _send(self, f: dict) -> None:
+        verb = "BUY" if f["side"] == "BOT" else "SELL"
+        mark = "🟢" if f["side"] == "BOT" else "🔴"
+        text = (f"{mark} {verb} {f['symbol']}  {f['shares']:,.0f} @ {f['avg']:.2f}"
+                f"   ({_et_hhmm(f['time'])} ET)")
+        if f.get("pnl") is not None:
+            text += f"\nP&L {f['pnl']:+,.0f} USD"
+        if not self.armed:
+            return
+        # A blocking POST would stall the refresh loop, so it goes out on its
+        # own thread; delivery is best-effort and never worth a frame for.
+        def deliver() -> None:
+            from .notify import send_telegram
+            if send_telegram(self.cfg, text):
+                self.sent += 1
+            else:
+                self.failed += 1
+        threading.Thread(target=deliver, daemon=True).start()
+
+
 # ---------- session phase ----------
 
 def phase(cfg: LiveConfig, now: datetime) -> tuple[str, str, str]:
@@ -465,7 +541,9 @@ LOG_STYLES = [("KILL", "bold red"), ("ERROR", "bold red"), ("error", "bold red")
               ("scanner picks", "bold cyan"), ("connected", "green")]
 
 
-def panel_status(cfg: LiveConfig, now: datetime, feed: "IBFeed | None" = None) -> Panel:
+def panel_status(cfg: LiveConfig, now: datetime, feed: "IBFeed | None" = None,
+                 alerter: "FillAlerter | None" = None) -> tuple[Panel, int]:
+    """Returns the panel and how many rows it needs, so render() can size it."""
     t = Table.grid(padding=(0, 2))
     t.add_column(style="dim", justify="right")
     t.add_column()
@@ -537,6 +615,14 @@ def panel_status(cfg: LiveConfig, now: datetime, feed: "IBFeed | None" = None) -
     t.add_row("risk/trade", f"{cfg.risk_per_trade_pct}%   max {cfg.max_concurrent} open")
     t.add_row("kill at", f"-{cfg.daily_loss_limit_pct}% day P&L")
     t.add_row("watchlist", f"top {cfg.scanner_top_k} at {cfg.scan_time}")
+    if alerter is not None:
+        if not alerter.armed:
+            t.add_row("fill alerts", Text("telegram not configured", style="dim"))
+        else:
+            note = f"telegram  {alerter.sent} sent"
+            if alerter.failed:
+                note += f", {alerter.failed} failed"
+            t.add_row("fill alerts", Text(note, style="red" if alerter.failed else "green"))
 
     # heartbeat: how stale the log is, so idle-by-design is distinguishable
     # from stuck. The engine only logs on events, so age alone is not an alarm.
@@ -545,7 +631,7 @@ def panel_status(cfg: LiveConfig, now: datetime, feed: "IBFeed | None" = None) -
         t.add_row("last log", f"{age // 60}m {age % 60:02d}s ago")
     except OSError:
         pass
-    return Panel(t, title="status", border_style="blue", box=box.ROUNDED)
+    return Panel(t, title="status", border_style="blue", box=box.ROUNDED), t.row_count
 
 
 def panel_picks(now: datetime, cfg: LiveConfig, feed: "IBFeed | None") -> Panel:
@@ -696,7 +782,7 @@ def panel_log(rows: int) -> Panel:
 
 
 def render(cfg: LiveConfig, rows: int, feed: "IBFeed | None" = None,
-           width: int = 0) -> Layout:
+           width: int = 0, alerter: "FillAlerter | None" = None) -> Layout:
     now = now_et()
     ptext, pstyle, countdown = phase(cfg, now)
     head = Table.grid(expand=True)
@@ -714,19 +800,24 @@ def render(cfg: LiveConfig, rows: int, feed: "IBFeed | None" = None,
     n_pos = len(held) if held else 0     # None means unknown, not empty
     picks_h = max(n_picks + 5, 6)          # border + title + header + rule
     pos_h = max(n_pos + 6, 6)              # + one line for the feed status
-    mid_h = max(15, picks_h + pos_h)
+    status_panel, status_rows = panel_status(cfg, now, feed, alerter)
+    # the tallest column wins, or the status pane loses its last rows -- which
+    # is where the alert state and the heartbeat live. On a narrow terminal the
+    # activity pane sits under status and needs counting too.
+    status_h = status_rows + 2 + (7 if width and width < 150 else 0)
+    mid_h = max(15, picks_h + pos_h, status_h)
 
     lay = Layout()
     lay.split_column(Layout(Panel(head, border_style="blue", box=box.ROUNDED),
                             name="head", size=3),
                      Layout(name="mid", size=mid_h),
                      Layout(name="bottom", ratio=1))
-    status_pane = Layout(panel_status(cfg, now, feed), name="status", ratio=2)
+    status_pane = Layout(status_panel, name="status", ratio=2)
     if width and width < 150:
         status_pane = Layout(name="status", ratio=2)
     lay["mid"].split_row(status_pane, Layout(name="right", ratio=3))
     if width and width < 150:
-        lay["status"].split_column(Layout(panel_status(cfg, now, feed)),
+        lay["status"].split_column(Layout(status_panel),
                                    Layout(panel_activity(4, feed), size=7))
     lay["right"].split_column(Layout(panel_picks(now, cfg, feed), size=picks_h),
                               Layout(panel_positions(feed)))
@@ -751,6 +842,7 @@ def main() -> None:
     cfg = load_config()
     console = Console()
     feed = IBFeed(cfg) if "--ib" in sys.argv else None
+    alerter = FillAlerter(cfg) if feed is not None else None
 
     fixed = int(sys.argv[sys.argv.index("--rows") + 1]) if "--rows" in sys.argv else 0
 
@@ -761,11 +853,11 @@ def main() -> None:
     try:
         if "--once" in sys.argv:
             if feed is not None:      # give quotes a moment to arrive
-                render(cfg, log_rows(), feed, console.size.width)
+                render(cfg, log_rows(), feed, console.size.width, alerter)
                 feed.pump(3)
-            console.print(render(cfg, log_rows(), feed, console.size.width))
+            console.print(render(cfg, log_rows(), feed, console.size.width, alerter))
             return
-        with Live(render(cfg, log_rows(), feed, console.size.width), console=console,
+        with Live(render(cfg, log_rows(), feed, console.size.width, alerter), console=console,
                   refresh_per_second=4, screen=True) as live:
             failures = 0
             while True:
@@ -773,8 +865,10 @@ def main() -> None:
                     feed.pump(2)
                 else:
                     time.sleep(2)
+                if alerter is not None and feed is not None:
+                    alerter.poll(feed.fills())
                 try:
-                    live.update(render(cfg, log_rows(), feed, console.size.width))
+                    live.update(render(cfg, log_rows(), feed, console.size.width, alerter))
                     failures = 0
                 except Exception:  # noqa: BLE001
                     # One bad frame keeps the previous one on screen; a run of

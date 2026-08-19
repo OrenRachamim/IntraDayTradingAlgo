@@ -61,7 +61,7 @@ max 12 entries/day, risk 1.5% equity per trade, notional ≤ 2.5× equity / slot
 
 | Command | Purpose |
 |---|---|
-| `python -m live.monitor --ib` | dashboard plus live prices, positions and a per-symbol **"needs for entry"** column (own clientId, reads only) |
+| `python -m live.monitor --ib` | dashboard plus live prices, positions, a per-symbol **"needs for entry"** column, and **Telegram alerts on every fill** — both entries and exits, read straight from the broker (own clientId, reads only) |
 | `python -m live.monitor` | **read-only console dashboard** — phase clock, scanner picks, orders, fills, live log tail. Safe to run alongside a session (opens no IB connection) |
 | `python -m live.run_live --status` | connectivity, equity, open positions, flags, live stats |
 | `python -m live.run_live --scan-only` | dry-run the 10:00 scanner |
