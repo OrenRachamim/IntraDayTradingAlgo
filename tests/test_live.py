@@ -4,6 +4,7 @@ import io
 import logging
 import os
 import sqlite3
+import time
 from datetime import datetime
 
 import numpy as np
@@ -292,3 +293,61 @@ def test_positions_panel_without_feed_asks_for_ib():
     out = _render_to_text(panel_positions(None))
     assert "--ib" in out
     assert "flat" not in out.lower()
+
+
+def test_pump_survives_a_dropped_socket():
+    """A Gateway restart must not take the dashboard down with it.
+
+    ib.sleep() raises ConnectionError when the socket dies; if that escapes,
+    the operator loses the whole screen at the worst possible moment.
+    """
+    from live.monitor import IBFeed
+
+    class _DeadIB:
+        def isConnected(self):
+            return True
+
+        def sleep(self, _s):
+            raise ConnectionError("Socket disconnect")
+
+        def disconnect(self):
+            raise ConnectionError("already gone")
+
+    feed = IBFeed(LiveConfig())
+    feed.ib = _DeadIB()
+    feed._tickers["AMLX"] = object()
+    feed._backfilled = True
+
+    feed.pump(0)                       # must not raise
+
+    assert feed.ib is None, "dead connection must be forgotten"
+    assert not feed._tickers, "stale tickers must not survive a reconnect"
+    assert feed._backfilled is False
+    assert "connection lost" in str(feed.status)
+
+
+def test_feed_reports_unknown_positions_after_a_drop():
+    """Once dropped, the panel must not claim the account is flat."""
+    from live.monitor import IBFeed, panel_positions
+
+    feed = IBFeed(LiveConfig())
+    feed.drop("connection lost (ConnectionError)")
+    feed._next_try = time.time() + 999     # block the reconnect attempt
+    out = _render_to_text(panel_positions(feed))
+    assert "UNKNOWN" in out
+    assert "flat" not in out.lower()
+
+
+def test_render_survives_a_disconnected_feed():
+    """The first frame is drawn before the error-tolerant loop starts.
+
+    portfolio() returns None when the broker is unreachable, and render()
+    sizes the positions pane from it -- len(None) crashed the dashboard on
+    startup whenever the Gateway was down.
+    """
+    from live.monitor import IBFeed, render
+
+    feed = IBFeed(LiveConfig())
+    feed._next_try = time.time() + 999       # never connects
+    assert feed.portfolio() is None
+    render(load_config(), 8, feed, 140)      # must not raise

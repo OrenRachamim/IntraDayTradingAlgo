@@ -362,16 +362,52 @@ class IBFeed:
             pass
         return float("nan")
 
+    def drop(self, why: str) -> None:
+        """Forget a dead connection so ensure() can rebuild it.
+
+        The cached tickers, bars and PnL handle all belong to the old socket;
+        keeping them across a reconnect would leave the dashboard quietly
+        showing values frozen at the moment the link died.
+        """
+        try:
+            if self.ib is not None:
+                self.ib.disconnect()
+        except Exception:  # noqa: BLE001
+            pass
+        self.ib = None
+        self._tickers.clear()
+        self._bars.clear()
+        self._gates.clear()
+        self._pnl = None
+        self._backfilled = False
+        self._subscribed_at = 0.0
+        self._next_try = time.time() + 3.0
+        self.status = Text(why, style="bold red")
+
     def pump(self, seconds: float) -> None:
-        """Sleep while keeping the IB event loop alive."""
-        if self.ib is not None and self.ib.isConnected():
-            self.ib.sleep(seconds)
-        else:
-            time.sleep(seconds)
+        """Sleep while keeping the IB event loop alive.
+
+        A dropped socket surfaces here as ConnectionError out of ib.sleep().
+        The dashboard has to outlive its broker connection -- an operator
+        losing the whole screen because the Gateway restarted is worse than
+        losing the prices -- so the feed is marked down and retried later.
+        """
+        ib = self.ib
+        if ib is not None:
+            try:
+                if ib.isConnected():
+                    ib.sleep(seconds)
+                    return
+            except Exception as e:  # noqa: BLE001
+                self.drop(f"connection lost ({type(e).__name__})")
+        time.sleep(seconds)
 
     def close(self) -> None:
-        if self.ib is not None and self.ib.isConnected():
-            self.ib.disconnect()
+        try:
+            if self.ib is not None and self.ib.isConnected():
+                self.ib.disconnect()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def _num(v) -> bool:
@@ -664,7 +700,8 @@ def render(cfg: LiveConfig, rows: int, feed: "IBFeed | None" = None,
     # Size the panes to their contents: a fixed height silently truncates the
     # last watchlist row, which is exactly the row you need when top_k grows.
     n_picks = len(query("select 1 from scanner_log where date=?", (str(now.date()),)))
-    n_pos = len(feed.portfolio()) if feed is not None else 0
+    held = feed.portfolio() if feed is not None else None
+    n_pos = len(held) if held else 0     # None means unknown, not empty
     picks_h = max(n_picks + 5, 6)          # border + title + header + rule
     pos_h = max(n_pos + 6, 6)              # + one line for the feed status
     mid_h = max(15, picks_h + pos_h)
@@ -720,12 +757,23 @@ def main() -> None:
             return
         with Live(render(cfg, log_rows(), feed, console.size.width), console=console,
                   refresh_per_second=4, screen=True) as live:
+            failures = 0
             while True:
                 if feed is not None:
                     feed.pump(2)
                 else:
                     time.sleep(2)
-                live.update(render(cfg, log_rows(), feed, console.size.width))
+                try:
+                    live.update(render(cfg, log_rows(), feed, console.size.width))
+                    failures = 0
+                except Exception:  # noqa: BLE001
+                    # One bad frame keeps the previous one on screen; a run of
+                    # them is a real fault worth surfacing rather than hiding.
+                    failures += 1
+                    if failures >= 5:
+                        raise
+                    if feed is not None:
+                        feed.drop("render failed - reconnecting")
     except KeyboardInterrupt:
         console.print("[dim]monitor stopped - the engine was not touched[/dim]")
     finally:
