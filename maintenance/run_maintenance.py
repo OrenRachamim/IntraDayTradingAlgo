@@ -84,7 +84,7 @@ def main() -> None:
     wf_pf = 0.0
     wf_path = os.path.join(RESULTS, "walkforward_summary.json")
     if ok and os.path.exists(wf_path):
-        wf = json.load(open(wf_path))
+        wf = json.load(open(wf_path, encoding="utf-8"))
         wf_pf = wf.get("oos_metrics", {}).get("profit_factor", 0.0)
         wf_ret = wf.get("oos_metrics", {}).get("total_return_pct", 0.0)
         report.append(f"\nOOS profit factor: **{wf_pf:.2f}**, return {wf_ret:+.2f}%")
@@ -129,7 +129,7 @@ def main() -> None:
     # 7: persist + notify
     os.makedirs(REPORTS_DIR, exist_ok=True)
     path = os.path.join(REPORTS_DIR, f"maintenance_{stamp}.md")
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(report))
     log.info(f"maintenance report: {path}")
     notify(cfg, f"🔧 weekly maintenance {stamp}: {verdict}\n"

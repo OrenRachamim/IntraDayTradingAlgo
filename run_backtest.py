@@ -183,7 +183,7 @@ def main() -> None:
     start, end = curve.index[0], curve.index[-1]
     spy_ret = spy_benchmark(spy_daily, start, end)
 
-    with open(os.path.join(RESULTS, "final_config.json"), "w") as f:
+    with open(os.path.join(RESULTS, "final_config.json"), "w", encoding="utf-8") as f:
         json.dump(asdict(chosen), f, indent=2)
 
     print(json.dumps({k: round(v, 3) if isinstance(v, float) else v
@@ -215,7 +215,7 @@ def write_summary(final: dict, chosen: Params, spy_ret: float,
         dfr.head(10).to_markdown(index=False) if len(dfr) else "n/a",
         "\n*Generated automatically by run_backtest.py*",
     ]
-    with open(os.path.join(RESULTS, "SUMMARY.md"), "w") as f:
+    with open(os.path.join(RESULTS, "SUMMARY.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print("  saved results/SUMMARY.md")
 

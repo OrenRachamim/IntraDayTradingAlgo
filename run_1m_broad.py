@@ -108,7 +108,7 @@ def main() -> None:
           f"strategy {out['full']['total_return_pct']:+.2f}%  "
           f"(edge {out['full']['total_return_pct'] - spy_ret:+.2f}pp)")
 
-    with open(os.path.join(RESULTS, "broad1m_summary.json"), "w") as f:
+    with open(os.path.join(RESULTS, "broad1m_summary.json"), "w", encoding="utf-8") as f:
         json.dump({"universe_size": len(symbols), "usable_frames": len(data),
                    "window": [str(win_start), str(win_end)], "spy_ret_pct": spy_ret,
                    "configs": [asdict(p) for p in CONFIGS],

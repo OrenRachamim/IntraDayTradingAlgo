@@ -112,7 +112,7 @@ def main() -> None:
     spy_ret = spy_benchmark(spy_raw, win_start, win_end)
     print(f"  SPY same window: {spy_ret:+.2f}%")
 
-    with open(os.path.join(RESULTS, "scanner_summary.json"), "w") as f:
+    with open(os.path.join(RESULTS, "scanner_summary.json"), "w", encoding="utf-8") as f:
         json.dump({"best_scanner": {k: best[k] for k in ("top_k", "gap_min", "move_min",
                                                          "rv_min")},
                    "metrics": {k: {kk: vv for kk, vv in v.items()

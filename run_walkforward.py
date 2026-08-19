@@ -117,7 +117,7 @@ def main() -> None:
     pd.DataFrame(fold_log).to_csv(os.path.join(RESULTS, "walkforward_folds.csv"), index=False)
     tdf.to_csv(os.path.join(RESULTS, "walkforward_oos_trades.csv"), index=False)
     curve.to_csv(os.path.join(RESULTS, "walkforward_oos_equity.csv"))
-    with open(os.path.join(RESULTS, "walkforward_summary.json"), "w") as f:
+    with open(os.path.join(RESULTS, "walkforward_summary.json"), "w", encoding="utf-8") as f:
         json.dump({"oos_metrics": {k: v for k, v in m.items() if isinstance(v, (int, float))},
                    "spy_oos_ret_pct": spy_ret, "folds": fold_log}, f, indent=2, default=str)
     print("  saved results/walkforward_*.csv/json")

@@ -121,7 +121,7 @@ def main() -> None:
                 spy_raw.columns = spy_raw.columns.get_level_values(0)
             spy_ret = spy_benchmark(spy_raw, curve.index[0], curve.index[-1])
             print(f"  SPY buy&hold same window: {spy_ret:+.2f}%")
-            with open(os.path.join(RESULTS, "ensemble_configs.json"), "w") as f:
+            with open(os.path.join(RESULTS, "ensemble_configs.json"), "w", encoding="utf-8") as f:
                 json.dump([asdict(p) for p in robust_params], f, indent=2)
 
 

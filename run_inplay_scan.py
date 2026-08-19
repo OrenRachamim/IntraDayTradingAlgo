@@ -116,7 +116,7 @@ def main() -> None:
             spy_ret = spy_benchmark(spy_raw, curve.index[0], curve.index[-1])
             print(f"  SPY buy&hold same window: {spy_ret:+.2f}%  "
                   f"(strategy edge: {m['total_return_pct'] - spy_ret:+.2f}pp)")
-            with open(os.path.join(RESULTS, "ensemble_configs.json"), "w") as f:
+            with open(os.path.join(RESULTS, "ensemble_configs.json"), "w", encoding="utf-8") as f:
                 json.dump([asdict(p) for p in picked], f, indent=2)
 
 

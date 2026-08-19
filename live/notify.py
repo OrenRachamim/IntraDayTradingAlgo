@@ -19,9 +19,16 @@ def get_logger() -> logging.Logger:
         _log.setLevel(logging.INFO)
         os.makedirs(os.path.join(STATE_DIR, "logs"), exist_ok=True)
         fh = TimedRotatingFileHandler(os.path.join(STATE_DIR, "logs", "live.log"),
-                                      when="midnight", backupCount=30)
+                                      when="midnight", backupCount=30, encoding="utf-8")
         fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         sh = logging.StreamHandler()
+        # Windows consoles default to a legacy codepage; keep a stray emoji
+        # in a log line from raising inside logging.
+        if hasattr(sh.stream, "reconfigure"):
+            try:
+                sh.stream.reconfigure(encoding="utf-8", errors="backslashreplace")
+            except (ValueError, OSError):
+                pass
         sh.setFormatter(logging.Formatter("%(asctime)s %(message)s", "%H:%M:%S"))
         _log.addHandler(fh)
         _log.addHandler(sh)
