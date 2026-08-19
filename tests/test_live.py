@@ -351,3 +351,46 @@ def test_render_survives_a_disconnected_feed():
     feed._next_try = time.time() + 999       # never connects
     assert feed.portfolio() is None
     render(load_config(), 8, feed, 140)      # must not raise
+
+
+# ---------- the engine must outlive its broker connection ----------
+
+def test_broker_sleep_survives_a_dropped_socket():
+    """ib.sleep() raising must not end the trading session.
+
+    The Gateway restarts daily by design. An unguarded sleep turned that into
+    a session kill -- which also skips the 15:55 flatten and leaves positions
+    open overnight.
+    """
+    from live.broker import Broker
+
+    class _DeadIB:
+        disconnected = False
+
+        def sleep(self, _s):
+            raise ConnectionError("Socket disconnect")
+
+        def disconnect(self):
+            _DeadIB.disconnected = True
+
+    b = Broker.__new__(Broker)
+    b.cfg = LiveConfig()
+    b.ib = _DeadIB()
+    b.log = notify.get_logger()
+
+    assert b.sleep(0) is False          # reports the drop, does not raise
+    assert _DeadIB.disconnected, "a dead socket must be closed before reconnecting"
+
+
+def test_broker_sleep_reports_success_when_connected():
+    from live.broker import Broker
+
+    class _LiveIB:
+        def sleep(self, _s):
+            return True
+
+    b = Broker.__new__(Broker)
+    b.cfg = LiveConfig()
+    b.ib = _LiveIB()
+    b.log = notify.get_logger()
+    assert b.sleep(0) is True

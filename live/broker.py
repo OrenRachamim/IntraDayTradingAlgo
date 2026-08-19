@@ -51,6 +51,28 @@ class Broker:
             self.log.warning("gateway connection lost — reconnecting")
             self.connect()
 
+    def sleep(self, seconds: float) -> bool:
+        """Sleep while servicing the IB event loop; survive a dropped socket.
+
+        ib.sleep() raises ConnectionError when the link dies. Unguarded, that
+        exception ends the trading session outright -- taking the 15:55 flatten
+        with it and leaving positions open overnight. The Gateway restarts
+        daily by design, so this is an expected event, not an exceptional one.
+
+        Returns False when the connection went down during the sleep.
+        """
+        try:
+            self.ib.sleep(seconds)
+            return True
+        except Exception as e:  # noqa: BLE001
+            self.log.warning(f"⚠️ connection dropped during sleep: {e}")
+            try:
+                self.ib.disconnect()
+            except Exception:  # noqa: BLE001
+                pass
+            time.sleep(seconds)     # keep the loop's cadence while offline
+            return False
+
     # ---------- account ----------
     def equity(self) -> float:
         for row in self.ib.accountSummary(self.cfg.account or ""):

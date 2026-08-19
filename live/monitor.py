@@ -160,8 +160,11 @@ class IBFeed:
         self._delayed = False
 
     def ensure(self) -> bool:
-        if self.ib is not None and self.ib.isConnected():
-            return True
+        try:
+            if self.ib is not None and self.ib.isConnected():
+                return True
+        except Exception:  # noqa: BLE001 - a half-dead handle is still dead
+            self.ib = None
         if time.time() < self._next_try:
             return False
         self._next_try = time.time() + self.RETRY_S
@@ -189,10 +192,14 @@ class IBFeed:
         return False
 
     def contract(self, symbol: str):
+        """Qualified contract, or None if the broker could not confirm it."""
         if symbol not in self._contracts:
             from ib_async import Stock
             c = Stock(symbol, "SMART", "USD")
-            self.ib.qualifyContracts(c)
+            try:
+                self.ib.qualifyContracts(c)
+            except Exception:  # noqa: BLE001
+                return None
             self._contracts[symbol] = c
         return self._contracts[symbol]
 
@@ -203,8 +210,11 @@ class IBFeed:
         for s in symbols:
             if s in self._tickers:
                 continue
+            c = self.contract(s)
+            if c is None:
+                continue
             try:
-                self._tickers[s] = self.ib.reqMktData(self.contract(s), "", False, False)
+                self._tickers[s] = self.ib.reqMktData(c, "", False, False)
                 self._subscribed_at = self._subscribed_at or time.time()
             except Exception:  # noqa: BLE001
                 continue
@@ -245,7 +255,7 @@ class IBFeed:
         if bars is None:
             try:
                 bars = self.ib.reqHistoricalData(
-                    self.contract(symbol), endDateTime="", durationStr="2 D",
+                    self.contract(symbol) or symbol, endDateTime="", durationStr="2 D",
                     barSizeSetting="1 min", whatToShow="TRADES", useRTH=True,
                     formatDate=2, keepUpToDate=True)
             except Exception:  # noqa: BLE001

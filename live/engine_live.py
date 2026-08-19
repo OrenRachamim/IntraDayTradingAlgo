@@ -151,7 +151,8 @@ class LiveEngine:
         # wait for scanner time
         scan_min = hhmm_to_min(cfg.scan_time)
         while now_et_minute() < scan_min:
-            self.broker.ib.sleep(10)
+            if not self.broker.sleep(10):
+                self.broker.ensure_connected()
 
         from .scanner_live import run_scanner
         picks = run_scanner(self.broker, cfg)
@@ -169,15 +170,29 @@ class LiveEngine:
         stop_min = hhmm_to_min(cfg.shutdown)
         flattened = False
         while True:
-            self.broker.ib.sleep(5)
-            self.broker.ensure_connected()
+            self.broker.sleep(5)
+            # The clock is checked before anything that can fail: reaching
+            # 15:55 flat matters more than any individual broker call, and a
+            # dead link must never be a reason to skip it.
             now_min = now_et_minute()
             if now_min >= stop_min:
                 break
+            try:
+                self.broker.ensure_connected()
+            except Exception as e:  # noqa: BLE001
+                self.log.error(f"reconnect failed: {e}")
+                if now_min >= flat_min:
+                    notify(cfg, "🛑 cannot reach the Gateway at EOD — "
+                                "positions may still be open, flatten manually",
+                           important=True)
+                continue
             if now_min >= flat_min and not flattened:
-                self.broker.flatten_all(reason="eod")
-                flattened = True
-                notify(cfg, "🏁 EOD flatten complete")
+                try:
+                    self.broker.flatten_all(reason="eod")
+                    flattened = True
+                    notify(cfg, "🏁 EOD flatten complete")
+                except Exception as e:  # noqa: BLE001
+                    self.log.error(f"EOD flatten failed, retrying: {e}")
                 continue
             if flattened:
                 continue
