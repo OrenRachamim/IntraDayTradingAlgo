@@ -49,10 +49,19 @@ def send_telegram(cfg: LiveConfig, text: str) -> bool:
     if not telegram_configured(cfg):
         return False
     try:
-        requests.post(
+        r = requests.post(
             f"https://api.telegram.org/bot{cfg.telegram_bot_token}/sendMessage",
             json={"chat_id": cfg.telegram_chat_id, "text": text}, timeout=10)
-        return True
+        # A bad token answers 401 and a bad chat_id 400, both without raising.
+        # Reporting those as sent would leave the operator believing alerts are
+        # going out while nothing ever arrives.
+        body = r.json() if r.content else {}
+        if r.ok and body.get("ok"):
+            return True
+        get_logger().warning(
+            f"telegram rejected the message: HTTP {r.status_code} "
+            f"{body.get('description') or r.reason}")
+        return False
     except Exception as e:  # noqa: BLE001 - notifications must never kill the engine
         get_logger().warning(f"telegram send failed: {e}")
         return False

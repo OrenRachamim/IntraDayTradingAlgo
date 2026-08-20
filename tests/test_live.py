@@ -484,3 +484,49 @@ def test_et_stamp_degrades_instead_of_raising():
     from live.monitor import _et_stamp
     assert _et_stamp("not a date")          # returns something, does not raise
     assert _et_stamp(None)
+
+
+def test_send_telegram_reports_a_rejected_message_as_failed(monkeypatch):
+    """A bad token answers 401 without raising.
+
+    Counting that as sent would leave the dashboard showing alerts in green
+    while nothing ever reaches the phone.
+    """
+    import live.notify as n
+
+    class _Resp:
+        ok = False
+        status_code = 401
+        reason = "Unauthorized"
+        content = b"{}"
+
+        def json(self):
+            return {"ok": False, "error_code": 401, "description": "Unauthorized"}
+
+    monkeypatch.setattr(n.requests, "post", lambda *a, **k: _Resp())
+    cfg = LiveConfig(telegram_bot_token="bad", telegram_chat_id="1")
+    assert n.send_telegram(cfg, "hi") is False
+
+
+def test_send_telegram_reports_success_only_on_ok_true(monkeypatch):
+    import live.notify as n
+
+    class _Resp:
+        ok = True
+        status_code = 200
+        reason = "OK"
+        content = b"{}"
+
+        def __init__(self, ok_flag):
+            self._ok = ok_flag
+
+        def json(self):
+            return {"ok": self._ok, "result": {"message_id": 1}}
+
+    monkeypatch.setattr(n.requests, "post", lambda *a, **k: _Resp(True))
+    cfg = LiveConfig(telegram_bot_token="good", telegram_chat_id="1")
+    assert n.send_telegram(cfg, "hi") is True
+
+    # HTTP 200 with ok=false is still a rejection
+    monkeypatch.setattr(n.requests, "post", lambda *a, **k: _Resp(False))
+    assert n.send_telegram(cfg, "hi") is False
