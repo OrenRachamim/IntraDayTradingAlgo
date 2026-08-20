@@ -461,3 +461,26 @@ def test_send_telegram_no_ops_when_unconfigured(monkeypatch):
     monkeypatch.setattr(n.requests, "post", lambda *a, **k: called.append(a))
     assert n.send_telegram(LiveConfig(), "hi") is False
     assert called == []
+
+
+def test_et_stamp_shows_day_and_month_in_eastern_time():
+    """Order rows are stored in UTC; the pane is ET throughout.
+
+    16:37 UTC on 18 Aug is 12:37 ET the same day - a straight slice of the
+    string would have shown 16:37, and no date at all.
+    """
+    from datetime import timezone
+    from live.monitor import _et_stamp
+    utc = datetime(2026, 8, 18, 16, 37, tzinfo=timezone.utc)
+    assert _et_stamp(utc) == "18/08 12:37"
+    assert _et_stamp("2026-08-18T16:37:00+00:00") == "18/08 12:37"
+    # a naive stamp is treated as UTC, matching state.log_order's utcnow()
+    assert _et_stamp("2026-08-18T16:37:00") == "18/08 12:37"
+    # crossing midnight ET must roll the date back, not just the clock
+    assert _et_stamp(datetime(2026, 8, 19, 2, 30, tzinfo=timezone.utc)) == "18/08 22:30"
+
+
+def test_et_stamp_degrades_instead_of_raising():
+    from live.monitor import _et_stamp
+    assert _et_stamp("not a date")          # returns something, does not raise
+    assert _et_stamp(None)

@@ -484,7 +484,7 @@ class FillAlerter:
         verb = "BUY" if f["side"] == "BOT" else "SELL"
         mark = "🟢" if f["side"] == "BOT" else "🔴"
         text = (f"{mark} {verb} {f['symbol']}  {f['shares']:,.0f} @ {f['avg']:.2f}"
-                f"   ({_et_hhmm(f['time'])} ET)")
+                f"   ({_et_stamp(f['time'])} ET)")
         if f.get("pnl") is not None:
             text += f"\nP&L {f['pnl']:+,.0f} USD"
         if not self.armed:
@@ -710,15 +710,20 @@ def panel_positions(feed: "IBFeed | None") -> Panel:
                  border_style="green", box=box.ROUNDED)
 
 
-def _et_hhmm(ts) -> str:
-    """Times are shown in ET everywhere; order rows are stored in UTC."""
+def _et_stamp(ts) -> str:
+    """dd/mm HH:MM in ET. Order rows are stored in UTC, so convert first.
+
+    The date matters because the orders table and the broker's execution list
+    both carry more than one session: without it, a fill from two days ago
+    reads as if it happened this morning.
+    """
     try:
         t = ts if isinstance(ts, datetime) else datetime.fromisoformat(str(ts))
         if t.tzinfo is None:
             t = t.replace(tzinfo=ZoneInfo("UTC"))
-        return t.astimezone(ZoneInfo("US/Eastern")).strftime("%H:%M")
+        return t.astimezone(ZoneInfo("US/Eastern")).strftime("%d/%m %H:%M")
     except (ValueError, TypeError):
-        return str(ts)[11:16]
+        return str(ts)[:16].replace("T", " ")
 
 
 def panel_activity(rows: int = 8, feed: "IBFeed | None" = None) -> Panel:
@@ -732,7 +737,7 @@ def panel_activity(rows: int = 8, feed: "IBFeed | None" = None) -> Panel:
     fills = feed.fills() if feed is not None else []
     if fills:
         for f in fills[:rows]:
-            body.append(_et_hhmm(f["time"]) + " ", style="dim")
+            body.append(_et_stamp(f["time"]) + " ", style="dim")
             body.append(f"{f['symbol']} ", style="bold")
             body.append("BUY  " if f["side"] == "BOT" else "SELL ",
                         style="green" if f["side"] == "BOT" else "red")
@@ -747,7 +752,7 @@ def panel_activity(rows: int = 8, feed: "IBFeed | None" = None) -> Panel:
     orders = query("select ts, symbol, action, qty, order_type, aux_price, status "
                    "from orders order by id desc limit ?", (rows,))
     for ts, sym, act, qty, otype, px, status in orders:
-        body.append(_et_hhmm(ts) + " ", style="dim")
+        body.append(_et_stamp(ts) + " ", style="dim")
         body.append(f"{sym} ", style="bold")
         body.append(f"{act} ", style="green" if act == "BUY" else "red")
         body.append(f"{qty:,} {otype or ''}")
