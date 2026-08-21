@@ -16,6 +16,7 @@ turn it off), daily loss kill-switch, max concurrent positions, max trades/day.
 from __future__ import annotations
 
 import math
+import time
 from datetime import datetime, date
 
 import numpy as np
@@ -78,6 +79,69 @@ class LiveEngine:
             notify(self.cfg, f"🛑 KILL SWITCH: day PnL {dd:.2f}% <= "
                              f"-{self.cfg.daily_loss_limit_pct}%. Flattening.", important=True)
             self.broker.flatten_all(reason="kill_switch")
+
+    # ---------- data-feed watchdog ----------
+    def subscribe_bars(self, sym: str) -> None:
+        """(Re)subscribe a watchlist symbol's 1m bars and reset its clock."""
+        w = self.watch[sym]
+        old = self.watch[sym].get("bars")
+        if old is not None:
+            try:
+                self.broker.ib.cancelHistoricalData(old)
+            except Exception:  # noqa: BLE001
+                pass
+        bars = self.broker.bars_1m(w["contract"], duration="3 D", keep_up_to_date=True)
+        w["bars"] = bars
+        w["last_len"] = len(bars)
+        w["last_bar_at"] = time.time()
+        w["refreshed_at"] = time.time()
+
+    def feed_stale_for(self, sym: str) -> float:
+        """Seconds since this symbol last produced a bar."""
+        return time.time() - self.watch[sym].get("last_bar_at", time.time())
+
+    def check_feed(self, sym: str, now_min: int) -> None:
+        """Re-request bars when the stream goes quiet during trading hours.
+
+        A keepUpToDate subscription can stop delivering without erroring -- and
+        it also dies silently on a reconnect. The engine then runs perfectly on
+        frozen data, which from the outside is indistinguishable from a quiet
+        market. It is not: on 2026-08-21 the feed stopped at the open and six
+        genuine USDE setups went unseen, with nothing in the log to show for it.
+
+        Re-requesting costs one historical request per symbol, so it is rate
+        limited: IBKR allows only ~60 of those per ten minutes.
+        """
+        if now_min < self.params.entry_start_min or now_min >= hhmm_to_min(self.cfg.eod_flat):
+            return
+        stale = self.feed_stale_for(sym)
+        if stale < self.cfg.bar_stale_minutes * 60:
+            return
+        w = self.watch[sym]
+        if time.time() - w.get("refreshed_at", 0) < self.cfg.bar_refresh_minutes * 60:
+            return
+        before = len(w["bars"])
+        try:
+            self.subscribe_bars(sym)
+        except Exception as e:  # noqa: BLE001
+            self.log.error(f"{sym}: bar refresh failed: {e}")
+            self.watch[sym]["refreshed_at"] = time.time()
+            return
+        after = len(w["bars"])
+        if not w.get("stale_warned"):
+            w["stale_warned"] = True
+            notify(self.cfg, f"⚠️ {sym}: no new 1m bar for {stale / 60:.0f} min — "
+                             f"data feed re-requested ({before} -> {after} bars)",
+                   important=True)
+        else:
+            self.log.warning(f"{sym}: feed still quiet after {stale / 60:.0f} min "
+                             f"({before} -> {after} bars)")
+        if after > before:
+            # bars did arrive, the stream just never told us: act on the newest
+            try:
+                self.on_bar_close(sym)
+            except Exception as e:  # noqa: BLE001
+                self.log.error(f"{sym} on_bar_close error after refresh: {e}")
 
     # ---------- setup detection on the rolling window ----------
     def on_bar_close(self, sym: str) -> None:
@@ -160,10 +224,11 @@ class LiveEngine:
             notify(cfg, "scanner: no in-play symbols today — standing down")
         for p in picks:
             c = self.broker.stock(p["symbol"])
-            bars = self.broker.bars_1m(c, duration="3 D", keep_up_to_date=True)
-            self.watch[p["symbol"]] = {"contract": c, "bars": bars,
-                                       "last_len": len(bars), "entry_trades": [],
-                                       "ttl": 0}
+            self.watch[p["symbol"]] = {"contract": c, "bars": None, "last_len": 0,
+                                       "entry_trades": [], "ttl": 0,
+                                       "last_bar_at": time.time(),
+                                       "refreshed_at": 0.0, "stale_warned": False}
+            self.subscribe_bars(p["symbol"])
         notify(cfg, "watchlist: " + ", ".join(self.watch) if self.watch else "empty watchlist")
 
         flat_min = hhmm_to_min(cfg.eod_flat)
@@ -201,10 +266,14 @@ class LiveEngine:
                 w = self.watch[sym]
                 if len(w["bars"]) > w["last_len"]:      # a 1m bar completed
                     w["last_len"] = len(w["bars"])
+                    w["last_bar_at"] = time.time()
+                    w["stale_warned"] = False
                     try:
                         self.on_bar_close(sym)
                     except Exception as e:  # noqa: BLE001
                         self.log.error(f"{sym} on_bar_close error: {e}")
+                else:
+                    self.check_feed(sym, now_min)
 
         eq = self.broker.equity()
         state.upsert_daily(str(now_et().date()), end_equity=eq,

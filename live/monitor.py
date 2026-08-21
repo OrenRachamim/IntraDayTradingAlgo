@@ -154,6 +154,7 @@ class IBFeed:
         self._tickers: dict = {}
         self._bars: dict = {}
         self._gates: dict = {}
+        self._bar_age: dict = {}
         self._pnl = None
         self._backfilled = False
         self._next_try = 0.0
@@ -264,6 +265,7 @@ class IBFeed:
             self._bars[symbol] = bars
         if len(bars) < 60:
             return None
+        self._bar_age[symbol] = self._age_of(bars)
         cached = self._gates.get(symbol)
         if cached and cached[0] == len(bars):
             return cached[1]
@@ -281,6 +283,28 @@ class IBFeed:
             return None
         self._gates[symbol] = (len(bars), got)
         return got
+
+    @staticmethod
+    def _age_of(bars) -> float:
+        """Seconds since the newest bar's own timestamp, or nan."""
+        try:
+            t = bars[-1].date
+            if isinstance(t, datetime):
+                if t.tzinfo is None:
+                    t = t.replace(tzinfo=ZoneInfo("UTC"))
+                return (datetime.now(ZoneInfo("UTC")) - t).total_seconds()
+        except (IndexError, AttributeError, TypeError):
+            pass
+        return float("nan")
+
+    def bar_age(self, symbol: str) -> float:
+        """Age of this symbol's newest bar in seconds; nan when unknown.
+
+        Read from the bar's own timestamp rather than when it arrived, so a
+        subscription that silently stops delivering shows up as an ageing bar
+        instead of looking healthy.
+        """
+        return self._bar_age.get(symbol, float("nan"))
 
     def portfolio(self):
         """Open positions, or None when the broker could not be reached.
@@ -665,13 +689,22 @@ def panel_picks(now: datetime, cfg: LiveConfig, feed: "IBFeed | None") -> Panel:
             cells.append(f"{last:.2f}" if _num(last) else "-")
             cells.append(Text(f"{chg:+.2%}", style="green" if chg >= 0 else "red")
                          if chg == chg else Text("-", style="dim"))
-            cells.append(_needs(feed.gates(sym)))
+            cells.append(_needs(feed.gates(sym), feed.bar_age(sym)))
         t.add_row(*cells)
     return Panel(t, title=title, border_style="cyan", box=box.ROUNDED)
 
 
-def _needs(gates) -> Text:
-    """The conditions still blocking an entry, or READY when none are."""
+STALE_BAR_S = 180.0
+
+
+def _needs(gates, age: float = float("nan")) -> Text:
+    """The conditions still blocking an entry, or READY when none are.
+
+    A stale feed outranks the gate list: conditions computed on frozen bars
+    describe the past, and reporting them as current is worse than useless.
+    """
+    if age == age and age > STALE_BAR_S:
+        return Text(f"STALE FEED - {age / 60:.0f}m old", style="bold red")
     if gates is None:
         return Text("waiting for bars", style="dim")
     missing = [name for name, ok in gates if not ok]

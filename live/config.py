@@ -51,6 +51,8 @@ class LiveConfig:
     daily_loss_limit_pct: float = 3.0   # kill-switch: stop for the day at -3%
     max_trades_per_day: int = 12
     entry_order_ttl_bars: int = 2       # cancel untriggered buy-stops after N bars
+    bar_stale_minutes: float = 3.0      # no new 1m bar for this long -> feed suspect
+    bar_refresh_minutes: float = 2.0    # min gap between re-requests, for IBKR pacing
 
     # --- notifications (leave empty to disable) ---
     telegram_bot_token: str = ""

@@ -530,3 +530,96 @@ def test_send_telegram_reports_success_only_on_ok_true(monkeypatch):
     # HTTP 200 with ok=false is still a rejection
     monkeypatch.setattr(n.requests, "post", lambda *a, **k: _Resp(False))
     assert n.send_telegram(cfg, "hi") is False
+
+
+# ---------- data-feed watchdog ----------
+
+class _StubBars(list):
+    """A bar list that can be made to grow, like a keepUpToDate subscription."""
+
+
+def _watch_engine(monkeypatch, bars_len=1170):
+    eng = _engine(monkeypatch)
+    eng.watch["USDE"] = {"contract": object(), "bars": _StubBars(range(bars_len)),
+                         "last_len": bars_len, "entry_trades": [], "ttl": 0,
+                         "last_bar_at": time.time(), "refreshed_at": 0.0,
+                         "stale_warned": False}
+    return eng
+
+
+def test_watchdog_ignores_a_healthy_feed(monkeypatch):
+    eng = _watch_engine(monkeypatch)
+    calls = []
+    monkeypatch.setattr(eng, "subscribe_bars", lambda s: calls.append(s))
+    eng.check_feed("USDE", 11 * 60)          # mid-session, bar just arrived
+    assert calls == []
+
+
+def test_watchdog_refreshes_a_frozen_feed(monkeypatch):
+    """The 2026-08-21 failure: bars stopped arriving and nothing noticed."""
+    eng = _watch_engine(monkeypatch)
+    eng.watch["USDE"]["last_bar_at"] = time.time() - 600      # 10 minutes quiet
+    calls = []
+    monkeypatch.setattr(eng, "subscribe_bars", lambda s: calls.append(s))
+    monkeypatch.setattr(eng, "on_bar_close", lambda s: None)
+    eng.check_feed("USDE", 11 * 60)
+    assert calls == ["USDE"], "a quiet feed must be re-requested"
+    assert eng.watch["USDE"]["stale_warned"] is True
+
+
+def test_watchdog_respects_the_pacing_limit(monkeypatch):
+    """IBKR allows ~60 historical requests per 10 minutes; do not burn them."""
+    eng = _watch_engine(monkeypatch)
+    eng.watch["USDE"]["last_bar_at"] = time.time() - 600
+    eng.watch["USDE"]["refreshed_at"] = time.time()           # just refreshed
+    calls = []
+    monkeypatch.setattr(eng, "subscribe_bars", lambda s: calls.append(s))
+    eng.check_feed("USDE", 11 * 60)
+    assert calls == [], "must not re-request twice inside the cooldown"
+
+
+def test_watchdog_is_quiet_outside_the_entry_window(monkeypatch):
+    """Before 10:01 and after the flatten there are no bars to expect."""
+    eng = _watch_engine(monkeypatch)
+    eng.watch["USDE"]["last_bar_at"] = time.time() - 600
+    calls = []
+    monkeypatch.setattr(eng, "subscribe_bars", lambda s: calls.append(s))
+    eng.check_feed("USDE", 9 * 60 + 45)      # pre-scan
+    eng.check_feed("USDE", 15 * 60 + 58)     # after EOD flatten
+    assert calls == []
+
+
+def test_watchdog_processes_bars_that_arrived_unannounced(monkeypatch):
+    """A refresh that finds new bars must act on them, not just log."""
+    eng = _watch_engine(monkeypatch)
+    eng.watch["USDE"]["last_bar_at"] = time.time() - 600
+    processed = []
+
+    def grow(sym):
+        eng.watch[sym]["bars"] = _StubBars(range(1180))       # 10 new bars
+        eng.watch[sym]["refreshed_at"] = time.time()
+
+    monkeypatch.setattr(eng, "subscribe_bars", grow)
+    monkeypatch.setattr(eng, "on_bar_close", lambda s: processed.append(s))
+    eng.check_feed("USDE", 11 * 60)
+    assert processed == ["USDE"]
+
+
+def test_dashboard_reports_a_stale_feed_over_the_gate_list():
+    """Gates computed on frozen bars describe the past.
+
+    Showing them as if current is what made 2026-08-21 look like a quiet day.
+    """
+    from live.monitor import _needs
+    gates = [("VWAP", True), ("surge", False)]
+    fresh = _needs(gates, age=30.0)
+    stale = _needs(gates, age=25 * 60)
+    assert "surge" in str(fresh)
+    assert "STALE FEED" in str(stale)
+    assert "surge" not in str(stale)
+
+
+def test_needs_falls_back_when_bar_age_is_unknown():
+    from live.monitor import _needs
+    out = _needs([("VWAP", False)], age=float("nan"))
+    assert "VWAP" in str(out) and "STALE" not in str(out)
