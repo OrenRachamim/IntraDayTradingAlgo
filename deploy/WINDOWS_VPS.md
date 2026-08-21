@@ -42,8 +42,23 @@ the RDP session when you want to "close" it. It runs
 physical console: the desktop keeps a real display, your RDP window drops on
 its own, and Gateway keeps running. (Manual equivalent from an elevated cmd:
 `query user` to find your session id, then `tscon <id> /dest:console`.)
-Note: some minimal VPS images have no console session to redirect to — if
-tscon errors, the watchdog below still covers you.
+**tscon failed?** The script now tries three routes in order: by session id,
+by session name, and as SYSTEM through a one-shot scheduled task (on many
+hosts tscon is denied even to admins but allowed to SYSTEM). If all three
+fail, your VPS almost certainly has **no console session at all** — common on
+cloud virtualization — and tscon can never work there. Two supported
+fallbacks:
+
+1. **Provider console**: open your VPS provider's web/VNC console (control
+   panel → "Console"/"noVNC"), log in there, and start IB Gateway from that
+   session. It *is* the console session, so closing the browser tab is
+   completely safe — no display teardown ever happens to it. RDP can still be
+   used for everything except launching/keeping Gateway.
+2. **Watchdog-only mode**: accept that Gateway dies on each RDP disconnect
+   and let the watchdog (below) + IBC bring it back logged-in within ~5
+   minutes. Bracket orders rest on IBKR's servers, so open positions stay
+   protected during the gap; the engine reconnects by itself. In this mode
+   the watchdog task is mandatory, not optional.
 
 **b) Watchdog — self-heal even if Gateway does die.**
 Schedule `deploy\windows\gateway_watchdog.bat` every 5 minutes (edit the IBC
