@@ -623,3 +623,81 @@ def test_needs_falls_back_when_bar_age_is_unknown():
     from live.monitor import _needs
     out = _needs([("VWAP", False)], age=float("nan"))
     assert "VWAP" in str(out) and "STALE" not in str(out)
+
+
+# ---------- IBKR's own error stream must reach the log ----------
+
+def test_api_errors_are_classified_and_logged(monkeypatch):
+    """IBKR reports a broken data farm through the error channel.
+
+    That message is the explanation for a frozen bar feed, and it was going to
+    stderr where it did not survive the session.
+    """
+    from live.broker import Broker, API_FEED_CODES, API_INFO_CODES
+
+    class _Ev:
+        def __init__(self): self.fn = None
+        def __iadd__(self, fn): self.fn = fn; return self
+
+    b = Broker.__new__(Broker)
+    b.cfg = LiveConfig()
+    b.log = notify.get_logger()
+    b._error_hook = False
+    b.ib = type("X", (), {"errorEvent": _Ev()})()
+
+    records = []
+    monkeypatch.setattr(b.log, "warning", lambda m: records.append(("warn", m)))
+    monkeypatch.setattr(b.log, "info", lambda m: records.append(("info", m)))
+    pushed = []
+    import live.broker as bm
+    monkeypatch.setattr(bm, "notify", lambda cfg, t, important=False: pushed.append(t))
+
+    b._watch_api_errors()
+    on_error = b.ib.errorEvent.fn
+
+    on_error(1, 2104, "Market data farm connection is OK", None)
+    on_error(2, 2103, "Market data farm connection is broken", None)
+    on_error(3, 162, "pacing violation", None)
+
+    assert ("info", "IBKR 2104: Market data farm connection is OK") in records
+    assert any("162" in m for kind, m in records if kind == "warn")
+    assert any("2103" in t for t in pushed), "a broken data farm must be pushed"
+    assert 2103 in API_FEED_CODES and 2104 in API_INFO_CODES
+
+
+def test_api_error_hook_is_installed_once():
+    from live.broker import Broker
+
+    class _Ev:
+        def __init__(self): self.n = 0
+        def __iadd__(self, fn): self.n += 1; return self
+
+    b = Broker.__new__(Broker)
+    b.cfg = LiveConfig()
+    b.log = notify.get_logger()
+    b._error_hook = False
+    ev = _Ev()
+    b.ib = type("X", (), {"errorEvent": ev})()
+    b._watch_api_errors()
+    b._watch_api_errors()
+    assert ev.n == 1, "reconnecting must not stack duplicate handlers"
+
+
+def test_ib_async_logger_writes_to_the_operational_log(tmp_path, monkeypatch):
+    """Built fresh in a temp dir: the autouse fixture stubs the live logger."""
+    import logging
+    ibl = logging.getLogger("ib_async")
+    before = (list(ibl.handlers), ibl.propagate, ibl.level)
+    try:
+        monkeypatch.setattr(notify, "STATE_DIR", str(tmp_path))
+        monkeypatch.setattr(notify, "_log", None)
+        notify.get_logger()
+        assert ibl.handlers, "ib_async warnings must not vanish to stderr"
+        assert ibl.propagate is False
+        assert ibl.level == logging.WARNING
+    finally:
+        for h in ibl.handlers:
+            if h not in before[0]:
+                h.close()
+        ibl.handlers, ibl.propagate, ibl.level = before
+        notify._log = None

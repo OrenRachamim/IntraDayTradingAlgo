@@ -21,14 +21,51 @@ from .notify import get_logger, notify
 from . import state
 
 
+# IBKR reports connection health through the same channel as real errors.
+# These are routine chatter and would drown the log at warning level.
+API_INFO_CODES = {2100, 2104, 2106, 2107, 2108, 2119, 2158}
+# These mean market data stopped flowing. They are the messages that explain a
+# frozen bar feed, and the ones worth waking someone for.
+API_FEED_CODES = {1100, 1101, 1102, 2103, 2105, 2110, 2157}
+
+
 class Broker:
     def __init__(self, cfg: LiveConfig):
         self.cfg = cfg
         self.ib = IB()
         self.log = get_logger()
+        self._error_hook = False
+
+    def _watch_api_errors(self) -> None:
+        """Record IBKR's own error stream in the operational log.
+
+        ib_async logs to its own logger, which has no handler configured, so
+        Python's last-resort handler prints it to stderr and nothing is kept.
+        Every explanation IBKR offers for a dead subscription -- a broken data
+        farm, a pacing violation, a cancelled query -- was being written to a
+        console window and lost. Sessions are diagnosed from the log file, so
+        it has to land there.
+        """
+        if self._error_hook:
+            return
+        self._error_hook = True
+
+        def on_error(req_id, code, msg, contract=None) -> None:
+            what = getattr(contract, "symbol", "") or ""
+            line = f"IBKR {code}{' ' + what if what else ''}: {str(msg)[:160]}"
+            if code in API_FEED_CODES:
+                # a data farm dropping is why bars stop arriving; say so loudly
+                notify(self.cfg, f"⚠️ market data link: {line}", important=True)
+            elif code in API_INFO_CODES:
+                self.log.info(line)
+            else:
+                self.log.warning(line)
+
+        self.ib.errorEvent += on_error
 
     # ---------- connection ----------
     def connect(self, retries: int = 12, wait_s: int = 10) -> None:
+        self._watch_api_errors()
         for k in range(retries):
             try:
                 self.ib.connect(self.cfg.host, self.cfg.port,

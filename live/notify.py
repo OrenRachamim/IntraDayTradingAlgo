@@ -32,6 +32,13 @@ def get_logger() -> logging.Logger:
         sh.setFormatter(logging.Formatter("%(asctime)s %(message)s", "%H:%M:%S"))
         _log.addHandler(fh)
         _log.addHandler(sh)
+        # ib_async logs to its own logger with no handler attached, so its
+        # warnings went to stderr and never survived the session. Give it the
+        # same handlers; INFO would be far too chatty.
+        ib_log = logging.getLogger("ib_async")
+        ib_log.setLevel(logging.WARNING)
+        ib_log.handlers = [fh, sh]
+        ib_log.propagate = False
     return _log
 
 
