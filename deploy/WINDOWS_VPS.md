@@ -49,16 +49,54 @@ fail, your VPS almost certainly has **no console session at all** — common on
 cloud virtualization — and tscon can never work there. Two supported
 fallbacks:
 
-1. **Provider console**: open your VPS provider's web/VNC console (control
+1. **Install your own VNC server** — the chosen route here; see section 2c.
+2. **Provider console**: open your VPS provider's web/VNC console (control
    panel → "Console"/"noVNC"), log in there, and start IB Gateway from that
    session. It *is* the console session, so closing the browser tab is
    completely safe — no display teardown ever happens to it. RDP can still be
    used for everything except launching/keeping Gateway.
-2. **Watchdog-only mode**: accept that Gateway dies on each RDP disconnect
+3. **Watchdog-only mode**: accept that Gateway dies on each RDP disconnect
    and let the watchdog (below) + IBC bring it back logged-in within ~5
    minutes. Bracket orders rest on IBKR's servers, so open positions stay
    protected during the gap; the engine reconnects by itself. In this mode
    the watchdog task is mandatory, not optional.
+
+## 2c. The VNC route (for console-less VPSes)
+
+A VNC *server* owns the desktop's virtual display itself: viewers merely look
+at it. Closing the VNC viewer therefore never tears the display down, and the
+Gateway JVM never sees the display change that kills it on RDP disconnect.
+
+**Install (one command, elevated cmd):**
+
+```bat
+cd C:\Algo\IntraDayTradingAlgo\deploy\windows
+setup_vnc.bat <vnc-password-max-8-chars> <your-home-ip>
+```
+
+The script downloads TightVNC, installs the **server only** as a Windows
+service with password auth, and opens firewall port 5900 **restricted to your
+home IP** — it refuses to run without both arguments, so VNC is never exposed
+to the whole internet. If your home IP is dynamic, refresh the rule when it
+changes:
+
+```bat
+netsh advfirewall firewall set rule name="TightVNC-restricted" new remoteip=<new-ip>
+```
+
+**Operating discipline from now on:**
+
+- Connect with any VNC viewer (TightVNC Viewer, RealVNC, Remmina) to
+  `<vps-ip>:5900`. **Launch IB Gateway / IBC from this VNC desktop.**
+- Do everything Gateway-related through VNC. Closing the viewer is always safe.
+- **RDP becomes emergency-only.** Logging in over RDP with the same user takes
+  over the desktop session; the next RDP disconnect can kill Gateway once —
+  the watchdog (2b) revives it within ~5 minutes, but don't make RDP a habit.
+- Keep the watchdog task scheduled regardless: it also covers crashes, reboots
+  and IBKR's own nightly restarts.
+
+Extra hardening (optional): move VNC to a non-default port in TightVNC's
+server config, and prefer your provider's cloud-firewall on top of Windows'.
 
 **b) Watchdog — self-heal even if Gateway does die.**
 Schedule `deploy\windows\gateway_watchdog.bat` every 5 minutes (edit the IBC
