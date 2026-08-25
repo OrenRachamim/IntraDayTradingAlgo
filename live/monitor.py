@@ -676,15 +676,20 @@ def panel_picks(now: datetime, cfg: LiveConfig, feed: "IBFeed | None") -> Panel:
     # day; score and early move stay in the 10:00 log line rather than taking
     # width from "needs", which is the only column that moves bar to bar.
     cols = [("symbol", "left"), ("gap", "right"), ("rv", "right")]
-    if feed is not None:
-        cols += [("last", "right"), ("day", "right"), ("needs for entry", "left")]
+    # Without a broker feed there is no live price and no way to evaluate the
+    # entry conditions. Keep the columns and say so, rather than dropping them:
+    # a table that silently loses three columns looks complete and is not.
+    cols += [("last", "right"), ("day", "right"), ("needs for entry", "left")]
     for c, j in cols:
         # never wrap: a two-line row silently pushes the last symbol out of a
         # content-sized pane, which is how AMLX kept disappearing
         t.add_column(c, justify=j, no_wrap=True, overflow="ellipsis")
     for sym, _score_v, gap, _move, rv in rows:
         cells = [Text(sym, style="bold"), f"{gap:+.1%}", f"{rv:.1f}"]
-        if feed is not None:
+        if feed is None:
+            cells += [Text("-", style="dim"), Text("-", style="dim"),
+                      Text("needs --ib", style="yellow")]
+        else:
             last, chg = feed.quote(sym)
             cells.append(f"{last:.2f}" if _num(last) else "-")
             cells.append(Text(f"{chg:+.2%}", style="green" if chg >= 0 else "red")

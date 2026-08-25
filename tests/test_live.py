@@ -701,3 +701,16 @@ def test_ib_async_logger_writes_to_the_operational_log(tmp_path, monkeypatch):
                 h.close()
         ibl.handlers, ibl.propagate, ibl.level = before
         notify._log = None
+
+
+def test_watchlist_says_why_the_reasons_are_missing(monkeypatch, tmp_path):
+    """Without --ib the entry reasons cannot be computed.
+
+    Dropping the column silently leaves a table that looks complete while
+    three columns of information have quietly vanished.
+    """
+    import live.monitor as m
+    monkeypatch.setattr(m, "query", lambda sql, params=(): [("USDE", 1.0, 0.26, 0.05, 172.8)])
+    out = _render_to_text(m.panel_picks(datetime(2026, 8, 25), LiveConfig(), None))
+    assert "needs for entry" in out, "the column must stay visible"
+    assert "needs --ib" in out, "and must explain why it is empty"
