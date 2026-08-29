@@ -74,20 +74,24 @@ def load_symbol(symbol: str, calendar: pd.DatetimeIndex,
     fn = data_dir / "stocks" / f"{symbol.replace('/', '_')}.parquet"
     df = pd.read_parquet(fn)
     df = df.set_index("date").reindex(calendar)
-    close_raw = df["close"].to_numpy(dtype=np.float64)
-    adj = df["adj_close"].to_numpy(dtype=np.float64)
+    def col(name: str) -> np.ndarray:
+        x = df[name].to_numpy(dtype=np.float64)
+        return np.where(x > 0, x, np.nan)   # zero/negative prices are bad ticks
+
+    close_raw = col("close")
+    adj = col("adj_close")
     with np.errstate(invalid="ignore", divide="ignore"):
-        factor = np.where(close_raw > 0, adj / close_raw, np.nan)
+        factor = adj / close_raw
     valid = ~np.isnan(close_raw) & ~np.isnan(factor)
     if valid.sum() == 0:
         return None
     nz = np.flatnonzero(valid)
     return SymbolData(
         symbol=symbol,
-        open=(df["open"].to_numpy(dtype=np.float64) * factor).astype(np.float32),
-        high=(df["high"].to_numpy(dtype=np.float64) * factor).astype(np.float32),
-        low=(df["low"].to_numpy(dtype=np.float64) * factor).astype(np.float32),
-        close=adj.astype(np.float32),
+        open=(col("open") * factor).astype(np.float32),
+        high=(col("high") * factor).astype(np.float32),
+        low=(col("low") * factor).astype(np.float32),
+        close=np.where(valid, adj, np.nan).astype(np.float32),
         volume=df["volume"].to_numpy(dtype=np.float64).astype(np.float32),
         dollar_volume=(close_raw * df["volume"].to_numpy(dtype=np.float64)).astype(np.float32),
         first_idx=int(nz[0]),

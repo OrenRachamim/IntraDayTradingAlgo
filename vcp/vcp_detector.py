@@ -84,6 +84,8 @@ def detect_setups(sd: SymbolData, cfg: Config) -> list[Setup]:
             if n_c > len(legs):
                 continue
             sel = legs[-n_c:]
+            if any(h[2] <= 0 or l[2] <= 0 for h, l in sel):
+                continue
             depths = [(h[2] - l[2]) / h[2] for h, l in sel]
             if any(d <= 0 for d in depths):
                 continue
