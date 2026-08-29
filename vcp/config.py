@@ -64,6 +64,7 @@ class RiskConfig:
     risk_per_trade: float = 0.01      # fraction of equity risked per trade
     max_positions: int = 8
     max_weight: float = 0.20          # per-position cap as fraction of equity
+    leverage: float = 1.0             # buying power = equity * leverage (Minervini trades up to 2:1 margin)
 
 
 @dataclass
@@ -71,6 +72,7 @@ class ExitConfig:
     target_R: float = 3.0             # sell into strength at this R-multiple (0 = off)
     breakeven_at_R: float = 1.0       # raise stop to entry after this gain (0 = off)
     trail_ma: int = 50                # exit on close below this SMA (0 = off)
+    trail_ma_bear: int = 0            # tighter trail SMA used while market regime is off (0 = same)
     trail_activation_R: float = 0.0   # arm the trail only after this gain (0 = always on)
     time_stop_days: int = 0           # exit stagnant trades after N days (0 = off)
 
@@ -79,6 +81,7 @@ class ExitConfig:
 class CostConfig:
     slippage_bps: float = 10.0        # per side
     commission_bps: float = 2.0       # per side
+    margin_rate_annual: float = 0.055  # interest charged on borrowed cash (leverage > 1)
 
 
 @dataclass

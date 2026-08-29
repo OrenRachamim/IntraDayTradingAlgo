@@ -88,13 +88,17 @@ class Backtester:
                 self.setups_by_day.setdefault(s.confirm_idx, []).append(s)
                 self.n_setups += 1
 
-    def _trail_sma(self, symbol: str) -> np.ndarray | None:
+    def _trail_sma(self, symbol: str, t: int) -> np.ndarray | None:
         w = self.cfg.exit.trail_ma
+        wb = self.cfg.exit.trail_ma_bear
+        if wb > 0 and not self.market.regime_ok[t]:
+            w = wb                       # tighten the trail while the market regime is off
         if w <= 0:
             return None
-        if symbol not in self._trail_cache:
-            self._trail_cache[symbol] = sma(self.data[symbol].close.astype(np.float64), w)
-        return self._trail_cache[symbol]
+        key = f"{symbol}:{w}"
+        if key not in self._trail_cache:
+            self._trail_cache[key] = sma(self.data[symbol].close.astype(np.float64), w)
+        return self._trail_cache[key]
 
     def _vol_sma50(self, symbol: str) -> np.ndarray:
         if symbol not in self._volsma_cache:
@@ -246,10 +250,12 @@ class Backtester:
                     if risk_ps <= 0:
                         continue
                     size_scale = cfg.entry.bear_size_scale if bear else 1.0
+                    # buying power = equity * leverage - current invested value
+                    buying_power = cash + equity_now * (cfg.risk.leverage - 1.0)
                     shares = int(min(
                         equity_now * cfg.risk.risk_per_trade * size_scale / risk_ps,
                         equity_now * cfg.risk.max_weight * size_scale / exec_price,
-                        cash / exec_price,
+                        buying_power / exec_price,
                     ))
                     if shares < 1 or shares * exec_price < 500:
                         continue
@@ -283,7 +289,7 @@ class Backtester:
                 if act_R > 0 and not pos.trail_armed:
                     if h >= tr.entry_price + act_R * pos.init_risk:
                         pos.trail_armed = True
-                trail = self._trail_sma(sym)
+                trail = self._trail_sma(sym, t)
                 if (trail is not None and not math.isnan(trail[t]) and c < trail[t]
                         and t > tr.entry_idx
                         and (act_R <= 0 or pos.trail_armed)):
@@ -293,6 +299,8 @@ class Backtester:
                         and c < tr.entry_price + pos.init_risk):
                     pos.exit_at_open = "time_stop"
 
+            if cash < 0:  # margin interest on borrowed funds
+                cash += cash * cfg.costs.margin_rate_annual / 252.0
             mark_value = sum(p.last_mark * p.trade.shares for p in positions.values())
             equity_curve[t - self.start_idx] = cash + mark_value
             exposure[t - self.start_idx] = mark_value / max(cash + mark_value, 1e-9)

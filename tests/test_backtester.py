@@ -139,6 +139,25 @@ def test_delisting_force_closes():
     assert res.trades[0].reason == "delisted"
 
 
+def test_leverage_expands_buying_power_and_charges_interest():
+    closes = [95.0] * 12 + [101.0] + [101.0] * 30
+    sd = make_symbol(closes, spread=0.0)
+    setup = Setup(symbol="TEST", confirm_idx=10, pivot=100.0, support_low=95.0,
+                  base_high=105.0, base_start_idx=2, n_contractions=2,
+                  depths=(0.2, 0.05), vdu_ratio=0.5)
+    cfg1 = _cfg(risk_per_trade=0.9, max_weight=3.0)   # only cash/leverage binds
+    cfg2 = _cfg(risk_per_trade=0.9, max_weight=3.0)
+    cfg2.risk.leverage = 2.0
+    cfg2.costs.margin_rate_annual = 0.05
+    res1 = _run(sd, len(closes), setup, cfg1)
+    res2 = _run(sd, len(closes), setup, cfg2)
+    sh1, sh2 = res1.trades[0].shares, res2.trades[0].shares
+    assert sh2 > 1.9 * sh1                     # ~2x buying power
+    # flat price + borrowed money -> interest drag makes final equity lower
+    assert res2.equity.iloc[-1] < res1.equity.iloc[-1]
+    assert res2.equity.iloc[-1] < 100_000      # interest was actually charged
+
+
 def test_chase_guard_skips_runaway_gap():
     # opens 10% above the pivot -> too extended, must not chase
     closes = [95.0] * 12 + [110.0] + [110.0] * 5

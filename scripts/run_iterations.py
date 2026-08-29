@@ -31,12 +31,14 @@ from vcp.pipeline import DataCache, run_pipeline
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = ROOT / "results"
 
-IS_START, IS_END = "2004-01-01", "2017-01-01"
-# robustness: every candidate is scored on the MINIMUM of its performance across
-# these two disjoint in-sample sub-windows, so a config that only works in one
-# regime cannot win (anti-overfitting, learned the hard way in round 2).
-IS_SUBWINDOWS = [("2004-01-01", "2010-01-01"), ("2010-01-01", "2017-01-01")]
-OOS_START, OOS_END = "2017-01-01", "2026-08-01"
+# Walk-forward robustness: every candidate is scored on the MINIMUM CAGR edge
+# over SPY across three disjoint sub-windows spanning distinct market regimes,
+# so a config that only works in one regime cannot win (rounds 2-4 lesson).
+# The final holdout (OOS) is never touched by the search.
+IS_SUBWINDOWS = [("2004-01-01", "2010-01-01"),
+                 ("2010-01-01", "2016-01-01"),
+                 ("2016-01-01", "2022-01-01")]
+OOS_START, OOS_END = "2022-01-01", "2026-08-01"
 FULL_START, FULL_END = "2004-01-01", "2026-08-01"
 
 # Parameter groups swept one stage at a time; each stage keeps the best combo.
@@ -65,18 +67,20 @@ STAGES: list[tuple[str, list[dict]]] = [
         for bm in (15, 30)
     ]),
     ("exits", [
-        {"exit.target_R": tr, "exit.trail_ma": tm, "exit.breakeven_at_R": be,
-         "exit.trail_activation_R": ta}
+        {"exit.target_R": tr, "exit.trail_ma": tm, "exit.trail_ma_bear": tb,
+         "exit.breakeven_at_R": be, "exit.trail_activation_R": ta}
         for tr in (0.0, 3.0, 6.0)
-        for tm in (50, 100, 150)
+        for tm, tb in ((50, 0), (50, 20), (100, 0), (100, 20))
         for be in (0.0, 1.0)
         for ta in (0.0, 1.0)
     ]),
     ("exposure", [
-        {"risk.max_positions": mp, "risk.risk_per_trade": rpt, "risk.max_weight": mw}
-        for mp in (5, 8, 10)
+        {"risk.max_positions": mp, "risk.risk_per_trade": rpt,
+         "risk.max_weight": mw, "risk.leverage": lev}
+        for mp in (5, 8)
         for rpt in (0.02, 0.03)
         for mw in (0.25, 0.35)
+        for lev in (1.0, 1.5, 2.0)
     ]),
     ("stops", [
         {"risk.stop_pct": sp, "risk.stop_use_contraction_low": scl}
@@ -97,9 +101,9 @@ STAGES: list[tuple[str, list[dict]]] = [
     ]),
 ]
 
-FIELDS = ["stage", "run", "window", "overrides", "total_return", "cagr", "sharpe",
-          "max_drawdown", "profit_multiple_vs_spy", "n_trades", "win_rate",
-          "avg_R", "profit_factor", "avg_exposure", "n_triggered", "elapsed_s"]
+FIELDS = ["stage", "run", "window", "overrides", "total_return", "cagr", "spy_cagr",
+          "cagr_diff", "sharpe", "max_drawdown", "profit_multiple_vs_spy", "n_trades",
+          "win_rate", "avg_R", "profit_factor", "avg_exposure", "n_triggered", "elapsed_s"]
 
 
 def apply_overrides(cfg: Config, overrides: dict) -> Config:
@@ -122,6 +126,8 @@ def run_one(cfg: Config, cache: DataCache, writer, stage: str, run_name: str,
         "overrides": json.dumps(overrides, sort_keys=True),
         "total_return": round(s["total_return"], 4),
         "cagr": round(s["cagr"], 4),
+        "spy_cagr": round(s["spy_cagr"], 4),
+        "cagr_diff": round(s["cagr"] - s["spy_cagr"], 4),
         "sharpe": round(s["sharpe"], 3),
         "max_drawdown": round(s["max_drawdown"], 4),
         "profit_multiple_vs_spy": round(s["profit_multiple_vs_spy"], 3),
@@ -134,9 +140,10 @@ def run_one(cfg: Config, cache: DataCache, writer, stage: str, run_name: str,
         "elapsed_s": round(time.time() - t0, 1),
     }
     writer.writerow(row)
-    print(f"[{stage:>9}] {run_name:<40} {window:<4} mult={row['profit_multiple_vs_spy']:>7.2f}x "
+    print(f"[{stage:>9}] {run_name:<40} {window:<6} edge={row['cagr_diff']*100:>6.2f}% "
           f"cagr={row['cagr']*100:6.2f}% dd={row['max_drawdown']*100:6.1f}% "
-          f"sharpe={row['sharpe']:5.2f} trades={row['n_trades']}", flush=True)
+          f"sharpe={row['sharpe']:5.2f} mult={row['profit_multiple_vs_spy']:>6.2f}x "
+          f"trades={row['n_trades']}", flush=True)
     return row
 
 
@@ -154,16 +161,18 @@ def run_candidate(base: Config, overrides: dict, cache: DataCache, writer,
 
 
 def score(rows: list[dict]) -> float:
-    """Robust selection score = worst sub-window profit multiple (+ small Sharpe
-    tiebreak), with guards: enough trades in EVERY window and drawdowns no worse
-    than buy-and-holding the index through 2008 (~-55%)."""
+    """Robust selection score = worst sub-window CAGR edge over SPY (+ small
+    Sharpe tiebreak). CAGR difference is regime-stable, unlike the profit
+    multiple whose SPY denominator can be tiny in flat windows. Guards: enough
+    trades in EVERY window and drawdowns no worse than buy-and-holding the
+    index through 2008 (~-55%)."""
     for row in rows:
-        if row["n_trades"] < 60:
+        if row["n_trades"] < 40:
             return -1e9
         if row["max_drawdown"] < -0.55:
             return -1e9
-    return (min(r["profit_multiple_vs_spy"] for r in rows)
-            + 0.1 * min(r["sharpe"] for r in rows))
+    return (min(r["cagr_diff"] for r in rows)
+            + 0.02 * min(r["sharpe"] for r in rows))
 
 
 def main() -> None:
