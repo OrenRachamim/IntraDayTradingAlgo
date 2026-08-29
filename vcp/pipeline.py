@@ -85,18 +85,22 @@ def run_pipeline(cfg: Config, cache: DataCache | None = None) -> tuple[BacktestR
         lambda: {s: liquidity_mask(data[s], cfg) for s in symbols})
 
     def build_setups():
+        from .weekly import detect_weekly_setups
         out = {}
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             for s in symbols:
                 st = detect_setups(data[s], cfg)
+                if cfg.weekly.enabled:
+                    st = sorted(st + detect_weekly_setups(data[s], calendar, cfg),
+                                key=lambda x: x.confirm_idx)
                 if st:
                     out[s] = st
         return out
 
     setups = cache.get(
         _key("setups", bt.start, bt.end, cfg.universe.min_history_days,
-             cfg.vcp, cfg.entry.breakout_buffer), build_setups)
+             cfg.vcp, cfg.weekly, cfg.entry.breakout_buffer), build_setups)
 
     engine = Backtester(cfg, calendar, data, setups, tt_masks, liq_masks,
                         rs_pct, market, start_idx)

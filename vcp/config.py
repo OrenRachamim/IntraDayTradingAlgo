@@ -48,6 +48,24 @@ class VCPConfig:
 
 
 @dataclass
+class WeeklyVCPConfig:
+    """Weekly-timeframe VCP detection (bases measured in weeks), traded daily."""
+    enabled: bool = False
+    swing_window: int = 2
+    min_contractions: int = 2
+    max_contractions: int = 5
+    contraction_ratio_max: float = 0.6
+    noise_tolerance: float = 1.2
+    base_max_depth: float = 0.40
+    final_depth_max: float = 0.12
+    base_min_weeks: int = 6
+    base_max_weeks: int = 65
+    base_first_depth_min: float = 0.0
+    pivot_max_below_base_high: float = 0.15
+    vdu_ratio_max: float = 1.0
+
+
+@dataclass
 class EntryConfig:
     breakout_buffer: float = 0.002    # trigger = pivot * (1 + buffer)
     max_chase_pct: float = 0.05       # skip fills further than this above pivot
@@ -105,6 +123,7 @@ class Config:
     universe: UniverseConfig = field(default_factory=UniverseConfig)
     tt: TrendTemplateConfig = field(default_factory=TrendTemplateConfig)
     vcp: VCPConfig = field(default_factory=VCPConfig)
+    weekly: WeeklyVCPConfig = field(default_factory=WeeklyVCPConfig)
     entry: EntryConfig = field(default_factory=EntryConfig)
     risk: RiskConfig = field(default_factory=RiskConfig)
     exit: ExitConfig = field(default_factory=ExitConfig)
