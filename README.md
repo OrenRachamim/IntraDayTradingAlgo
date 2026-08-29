@@ -7,6 +7,12 @@ combined with classical support/resistance principles.
 - `docs/VCP_RESEARCH.md` — the deep-dive research and the quantified rule set.
 - `docs/RESULTS.md` — backtest results, iteration log, and honest caveats.
 
+**Result (2004-2026, 8 optimization rounds with walk-forward validation):**
+the final config (`configs/final.yaml`) returns **+2,280% vs SPY's +914%
+(2.49x profit multiple, CAGR 15.1% vs 10.8%)** using Minervini-style 2:1
+margin — but the untouched 2022-2026 holdout *loses* money, so read
+`docs/RESULTS.md` before believing any of it.
+
 ## What it does
 
 1. Screens ~7,700 US stocks daily with Minervini's 8-point **Trend Template**

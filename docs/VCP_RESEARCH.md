@@ -184,7 +184,8 @@ Classical S/R principles woven into the system (per the user's requirement):
 | `tt.sma200_slope_days` | Criterion 3 lookback | 1 month | 21 |
 | `vcp.base_max_depth` | First correction cap | 35% (50% hard) | 0.35 |
 | `vcp.min_contractions` | Number of T's | 2–6 | 2 |
-| `vcp.contraction_ratio_max` | Tightening ratio | ~0.5 | 0.75 |
+| `vcp.contraction_ratio_max` | Tightening envelope: final depth ≤ ratio × first depth | ~0.5 | 0.75 |
+| `vcp.noise_tolerance` | Local noise allowed between consecutive contractions | — | 1.2 |
 | `vcp.final_depth_max` | Last-leg tightness | 10% | 0.10 |
 | `vcp.base_min_days` / `base_max_days` | Base length | 3–65 weeks | 25 / 325 |
 | `vcp.vdu_ratio_max` | Final-leg vol vs 50d avg | "dry up" | 0.85 |

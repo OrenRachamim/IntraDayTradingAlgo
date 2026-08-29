@@ -1,0 +1,59 @@
+# Aggressive final config (round-5 walk-forward winner; see docs/RESULTS.md for honest caveats)
+universe:
+  min_price: 5.0
+  min_dollar_volume: 2000000.0
+  min_history_days: 260
+tt:
+  min_pct_above_52w_low: 0.3
+  max_pct_below_52w_high: 0.25
+  rs_percentile_min: 70.0
+  sma200_slope_days: 63
+vcp:
+  swing_window: 3
+  min_contractions: 3
+  max_contractions: 6
+  contraction_ratio_max: 0.5
+  noise_tolerance: 1.2
+  base_max_depth: 0.35
+  final_depth_max: 0.1
+  base_min_days: 15
+  base_max_days: 325
+  pivot_max_below_base_high: 0.15
+  vdu_ratio_max: 1.0
+  setup_max_active_days: 40
+entry:
+  breakout_buffer: 0.002
+  max_chase_pct: 0.05
+  bo_vol_mult: 1.4
+  rank_by: tightness
+  market_filter: true
+  market_filter_ma: 200
+  bear_size_scale: 0.0
+risk:
+  stop_pct: 0.07
+  stop_use_contraction_low: true
+  stop_max_pct: 0.1
+  risk_per_trade: 0.02
+  max_positions: 8
+  max_weight: 0.35
+  leverage: 2.0
+  leverage_bear: 1.0
+  equity_curve_filter: 0
+exit:
+  target_R: 6.0
+  breakeven_at_R: 1.0
+  trail_ma: 50
+  trail_ma_bear: 0
+  trail_activation_R: 0.0
+  fail_close_below_pivot: false
+  time_stop_days: 0
+costs:
+  slippage_bps: 10.0
+  commission_bps: 2.0
+  margin_rate_annual: 0.055
+backtest:
+  start: '2004-01-01'
+  end: '2026-08-01'
+  initial_capital: 100000.0
+  idle_cash_in_spy: false
+name: final
