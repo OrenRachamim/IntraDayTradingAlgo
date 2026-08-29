@@ -1,0 +1,63 @@
+# Daily VCP entry scan -> Telegram.
+#
+# Requires two repository secrets (Settings -> Secrets and variables -> Actions):
+#   TELEGRAM_BOT_TOKEN  - from @BotFather
+#   TELEGRAM_CHAT_ID    - your chat id (message the bot, then check
+#                         https://api.telegram.org/bot<TOKEN>/getUpdates)
+#
+# NOTE: GitHub runs scheduled workflows only from the repository's DEFAULT
+# branch - merge this branch (or make it the default) to activate the schedule.
+# Until then, use the manual "Run workflow" button (workflow_dispatch).
+name: daily-vcp-scan
+
+on:
+  schedule:
+    - cron: "30 21 * * 1-5"   # 21:30 UTC = after the US close, Mon-Fri
+  workflow_dispatch:
+    inputs:
+      equity:
+        description: account equity for position sizing
+        default: "100000"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Month stamp for the bulk-data cache
+        id: month
+        run: echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache bulk dataset (refreshed monthly)
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: vcp-data-${{ steps.month.outputs.month }}
+
+      - name: Prepare dataset (skipped when cached)
+        run: python scripts/prepare_data.py --if-missing
+
+      - name: Run daily scan and send to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python scripts/scan_today.py \
+            --equity "${{ github.event.inputs.equity || '100000' }}" \
+            --refresh-universe --telegram
+
+      - name: Upload scan CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-${{ github.run_id }}
+          path: results/scans/*.csv
+          if-no-files-found: ignore

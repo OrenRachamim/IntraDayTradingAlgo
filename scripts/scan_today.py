@@ -48,6 +48,11 @@ def main() -> None:
                          "update are also found - the true daily mode")
     ap.add_argument("--max-dist", type=float, default=15.0,
                     help="hide candidates further than this %% below their trigger")
+    ap.add_argument("--telegram", action="store_true",
+                    help="send the result to Telegram (TELEGRAM_BOT_TOKEN / "
+                         "TELEGRAM_CHAT_ID env vars)")
+    ap.add_argument("--telegram-dry", action="store_true",
+                    help="print the Telegram message without sending")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -110,6 +115,15 @@ def main() -> None:
     out = outdir / f"scan_{cfg.backtest.end}.csv"
     result.to_csv(out, index=False)
     print(f"\nsaved: {out}", file=sys.stderr)
+
+    if args.telegram or args.telegram_dry:
+        from vcp.notify import format_scan_message, send_telegram
+        msg = format_scan_message(result, cfg.backtest.end, market_on, args.equity)
+        if args.telegram_dry:
+            print("\n--- telegram message (dry run) ---\n" + msg)
+        else:
+            send_telegram(msg)
+            print("telegram: sent", file=sys.stderr)
 
 
 if __name__ == "__main__":

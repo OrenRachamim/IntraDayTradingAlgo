@@ -81,7 +81,13 @@ def download_spy() -> None:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--skip-download", action="store_true")
+    ap.add_argument("--if-missing", action="store_true",
+                    help="do nothing when the prepared dataset already exists (CI cache)")
     args = ap.parse_args()
+    if args.if_missing and (DATA / "symbols_index.csv").exists() \
+            and (DATA / "stocks").is_dir():
+        print("dataset already prepared; nothing to do")
+        sys.exit(0)
     if not args.skip_download:
         download_shards()
         download_spy()
