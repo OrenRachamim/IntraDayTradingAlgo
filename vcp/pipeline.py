@@ -46,7 +46,9 @@ class DataCache:
         return self._store[key]
 
 
-def run_pipeline(cfg: Config, cache: DataCache | None = None) -> tuple[BacktestResult, dict]:
+def build_artifacts(cfg: Config, cache: DataCache | None = None) -> dict:
+    """Build (with caching) everything a backtest or scanner needs:
+    calendar, market, per-symbol data, RS percentiles, masks, and setups."""
     cache = cache or DataCache()
     bt = cfg.backtest
 
@@ -101,6 +103,19 @@ def run_pipeline(cfg: Config, cache: DataCache | None = None) -> tuple[BacktestR
     setups = cache.get(
         _key("setups", bt.start, bt.end, cfg.universe.min_history_days,
              cfg.vcp, cfg.weekly, cfg.entry.breakout_buffer), build_setups)
+
+    return {"calendar": calendar, "market": market, "data": data,
+            "rs_pct": rs_pct, "tt_masks": tt_masks, "liq_masks": liq_masks,
+            "setups": setups, "start_idx": start_idx, "symbols": symbols}
+
+
+def run_pipeline(cfg: Config, cache: DataCache | None = None) -> tuple[BacktestResult, dict]:
+    cache = cache or DataCache()
+    art = build_artifacts(cfg, cache)
+    calendar, market = art["calendar"], art["market"]
+    data, symbols = art["data"], art["symbols"]
+    rs_pct, tt_masks, liq_masks = art["rs_pct"], art["tt_masks"], art["liq_masks"]
+    setups, start_idx = art["setups"], art["start_idx"]
 
     engine = Backtester(cfg, calendar, data, setups, tt_masks, liq_masks,
                         rs_pct, market, start_idx)
