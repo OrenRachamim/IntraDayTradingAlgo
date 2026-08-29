@@ -1,0 +1,10 @@
+
+=== VCP entry candidates | as of 2026-08-29 | market regime: ON | equity $100,000 ===
+
+symbol       asof  close  trigger  dist_to_trigger_pct   stop  stop_pct  shares  position_value  n_contractions  final_depth_pct  vdu_ratio  days_active_left  rs_pct  staleness_days
+  ARWR 2026-08-27  88.59    90.18                 1.79  85.50      5.19     387         34900.0               4             5.00     0.5068                40    93.4               0
+   SNX 2026-08-27 260.13   265.40                 2.03 246.82      7.00     105         27867.0               5             8.09     0.8599                40    72.6               0
+   MBX 2026-08-27  66.39    70.08                 5.56  65.17      7.00     400         28032.0               3             8.49     0.6412                40    96.9               0
+  MGTX 2026-08-27  14.14    15.08                 6.65  14.02      7.00    1862         28079.0               4             8.84     0.9714                40    85.5               0
+
+orders: BUY STOP at 'trigger', initial stop at 'stop'; skip fills more than 5% above the pivot; confirm breakout-day volume >= 1.4x its 50d average.

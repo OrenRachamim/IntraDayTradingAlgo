@@ -53,6 +53,17 @@ python scripts/run_iterations.py
 
 # tests
 python -m pytest tests/ -q
+
+# DAILY ENTRY SCANNER: today's live VCP buy-stop candidates per the final config
+python scripts/scan_today.py --equity 100000 --refresh-universe
+#   --refresh-universe  refresh every trend-template-passing symbol from Yahoo
+#                       (~5-10 min) so setups formed since the monthly bulk
+#                       update are found - the true daily mode
+#   --no-refresh        offline mode (bulk data only)
+# Output: ranked table + results/scans/scan_YYYY-MM-DD.csv with, per candidate:
+#   trigger (buy-stop price), stop (initial stop), shares/position size for
+#   your equity, pattern stats (contractions, tightness, volume dry-up),
+#   RS percentile, and the market-regime state.
 ```
 
 ## Repository layout
