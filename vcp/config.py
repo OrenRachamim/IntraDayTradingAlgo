@@ -53,6 +53,7 @@ class EntryConfig:
     rank_by: str = "rs"               # candidate ranking: "rs" | "tightness"
     market_filter: bool = True        # only enter when SPY > its 200-day SMA
     market_filter_ma: int = 200
+    bear_size_scale: float = 0.0      # 0 = no entries in bear regime; >0 = enter at this size fraction
 
 
 @dataclass

@@ -90,8 +90,9 @@ STAGES: list[tuple[str, list[dict]]] = [
     ]),
     ("market", [
         {"entry.market_filter": mf, "entry.market_filter_ma": ma,
-         "vcp.setup_max_active_days": sad}
-        for mf, ma in ((True, 200), (True, 100), (False, 200))
+         "entry.bear_size_scale": bs, "vcp.setup_max_active_days": sad}
+        for mf, ma, bs in ((True, 200, 0.0), (True, 200, 0.5), (True, 100, 0.0),
+                           (True, 100, 0.5), (False, 200, 0.0))
         for sad in (20, 40)
     ]),
 ]

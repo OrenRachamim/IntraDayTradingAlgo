@@ -197,7 +197,8 @@ class Backtester:
                 # gates evaluated on yesterday's completed bar
                 if not (self.tt[sym][t - 1] and self.liq[sym][t - 1]):
                     continue
-                if cfg.entry.market_filter and not self.market.regime_ok[t - 1]:
+                bear = cfg.entry.market_filter and not self.market.regime_ok[t - 1]
+                if bear and cfg.entry.bear_size_scale <= 0:
                     continue
                 o, h = float(sd.open[t]), float(sd.high[t])
                 if math.isnan(o) or math.isnan(h):
@@ -221,14 +222,14 @@ class Backtester:
                     rank = -s.depths[-1]        # tighter final contraction first
                 else:
                     rank = float(self.rs[sym][t - 1]) if not math.isnan(self.rs[sym][t - 1]) else 0.0
-                candidates.append((rank, sym, a))
+                candidates.append((rank, sym, a, bear))
 
             if candidates:
                 candidates.sort(key=lambda x: -x[0])
                 # equity for sizing = cash + current marks
                 mark_value = sum(p.last_mark * p.trade.shares for p in positions.values())
                 equity_now = cash + mark_value
-                for rs_rank, sym, a in candidates:
+                for rs_rank, sym, a, bear in candidates:
                     if len(positions) >= cfg.risk.max_positions:
                         break
                     s = a.setup
@@ -244,9 +245,10 @@ class Backtester:
                     risk_ps = exec_price - stop
                     if risk_ps <= 0:
                         continue
+                    size_scale = cfg.entry.bear_size_scale if bear else 1.0
                     shares = int(min(
-                        equity_now * cfg.risk.risk_per_trade / risk_ps,
-                        equity_now * cfg.risk.max_weight / exec_price,
+                        equity_now * cfg.risk.risk_per_trade * size_scale / risk_ps,
+                        equity_now * cfg.risk.max_weight * size_scale / exec_price,
                         cash / exec_price,
                     ))
                     if shares < 1 or shares * exec_price < 500:
