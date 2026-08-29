@@ -68,6 +68,8 @@ class RiskConfig:
     max_positions: int = 8
     max_weight: float = 0.20          # per-position cap as fraction of equity
     leverage: float = 1.0             # buying power = equity * leverage (Minervini trades up to 2:1 margin)
+    pyramid_at_R: float = 0.0         # add to a winner once it gains this many R (0 = off)
+    pyramid_frac: float = 0.5         # add-on size as a fraction of the original share count
     leverage_bear: float = 1.0        # buying power multiplier while the market regime is off
     equity_curve_filter: int = 0      # margin allowed only while equity > SMA(equity, N); 0 = always
 

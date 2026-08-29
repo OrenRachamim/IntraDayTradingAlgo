@@ -46,6 +46,8 @@ class _Position:
     target: float               # 0 = off
     breakeven_done: bool = False
     trail_armed: bool = False
+    pyramided: bool = False
+    pyramid_at_open: bool = False
     exit_at_open: str = ""      # reason string when an exit is scheduled
     last_mark: float = 0.0
 
@@ -161,6 +163,23 @@ class Backtester:
                               float(sd.low[t]), float(sd.close[t]))
                 if math.isnan(o) or math.isnan(l):
                     continue  # halted day, keep position at last mark
+                if pos.pyramid_at_open and not pos.exit_at_open:
+                    # add to a proven winner at today's open (scheduled yesterday)
+                    pos.pyramid_at_open = False
+                    add = int(tr.shares * cfg.risk.pyramid_frac)
+                    mark_value = sum(p.last_mark * p.trade.shares for p in positions.values())
+                    equity_now = cash + mark_value
+                    exec_price = self._buy_cost(o)
+                    room = (equity_now * cfg.risk.max_weight
+                            - tr.shares * pos.last_mark) / exec_price
+                    buying_power = cash + equity_now * (cfg.risk.leverage - 1.0)
+                    add = int(min(add, max(room, 0), max(buying_power, 0) / exec_price))
+                    if add > 0:
+                        tr.entry_price = ((tr.entry_price * tr.shares + exec_price * add)
+                                          / (tr.shares + add))
+                        tr.shares += add
+                        cash -= exec_price * add
+                        pos.pyramided = True
                 exited = False
                 if pos.exit_at_open:
                     cash += self._close_position(pos, t, o, pos.exit_at_open)
@@ -310,6 +329,10 @@ class Backtester:
                 if (cfg.exit.fail_close_below_pivot and t == tr.entry_idx
                         and c < tr.pivot):
                     pos.exit_at_open = "failed_breakout"
+                if (cfg.risk.pyramid_at_R > 0 and not pos.pyramided
+                        and not pos.exit_at_open
+                        and c >= tr.entry_price + cfg.risk.pyramid_at_R * pos.init_risk):
+                    pos.pyramid_at_open = True
                 if (cfg.exit.breakeven_at_R > 0 and not pos.breakeven_done
                         and h >= tr.entry_price + cfg.exit.breakeven_at_R * pos.init_risk):
                     pos.stop = max(pos.stop, tr.entry_price)   # effective from tomorrow

@@ -1,0 +1,177 @@
+  [cache build    0.1s] ["calendar", "2004-01-01", "2010-01-01"]
+  [cache build    0.0s] ["market", "2004-01-01", "2010-01-01", 200]
+  [cache build   12.2s] ["data", "2004-01-01", "2010-01-01", 260]
+  [cache build    2.4s] ["rs", "2004-01-01", "2010-01-01", 260]
+  [cache build    1.7s] ["tt", "2004-01-01", "2010-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    0.4s] ["liq", "2004-01-01", "2010-01-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build    6.2s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[ baseline] base                                     IS2004 edge= 16.06% cagr= 18.11% dd= -22.5% sharpe= 0.81 mult= 13.25x trades=280
+  [cache build    0.0s] ["calendar", "2010-01-01", "2016-01-01"]
+  [cache build    0.0s] ["market", "2010-01-01", "2016-01-01", 200]
+  [cache build   15.0s] ["data", "2010-01-01", "2016-01-01", 260]
+  [cache build    3.2s] ["rs", "2010-01-01", "2016-01-01", 260]
+  [cache build    2.3s] ["tt", "2010-01-01", "2016-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    0.5s] ["liq", "2010-01-01", "2016-01-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build    7.7s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[ baseline] base                                     IS2010 edge=  8.14% cagr= 20.71% dd= -36.9% sharpe= 0.81 mult=  2.02x trades=409
+  [cache build    0.0s] ["calendar", "2016-01-01", "2022-01-01"]
+  [cache build    0.0s] ["market", "2016-01-01", "2022-01-01", 200]
+  [cache build   23.4s] ["data", "2016-01-01", "2022-01-01", 260]
+  [cache build    4.5s] ["rs", "2016-01-01", "2022-01-01", 260]
+  [cache build    3.4s] ["tt", "2016-01-01", "2022-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    0.7s] ["liq", "2016-01-01", "2022-01-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build   10.7s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[ baseline] base                                     IS2016 edge= 11.09% cagr= 28.66% dd= -32.8% sharpe= 1.05 mult=  2.15x trades=437
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.0, IS2004 edge= 16.06% cagr= 18.11% dd= -22.5% sharpe= 0.81 mult= 13.25x trades=280
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.0, IS2010 edge=  8.14% cagr= 20.71% dd= -36.9% sharpe= 0.81 mult=  2.02x trades=409
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.0, IS2016 edge= 11.09% cagr= 28.66% dd= -32.8% sharpe= 1.05 mult=  2.15x trades=437
+  [cache build    6.1s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.0, IS2004 edge= 22.89% cagr= 24.94% dd= -17.6% sharpe= 1.12 mult= 21.66x trades=193
+  [cache build    7.1s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.0, IS2010 edge=-10.62% cagr=  1.95% dd= -50.0% sharpe= 0.20 mult=  0.12x trades=270
+  [cache build    9.6s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.0, IS2016 edge=  9.31% cagr= 26.88% dd= -43.3% sharpe= 1.01 mult=  1.93x trades=349
+  [cache build    5.6s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.1, IS2004 edge= 14.18% cagr= 16.22% dd= -23.4% sharpe= 0.73 mult= 11.31x trades=260
+  [cache build    7.8s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.1, IS2010 edge=  1.60% cagr= 14.17% dd= -42.3% sharpe= 0.60 mult=  1.17x trades=385
+  [cache build   10.1s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.1, IS2016 edge= 18.34% cagr= 35.91% dd= -25.6% sharpe= 1.17 mult=  3.23x trades=407
+  [cache build    5.0s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.1, IS2004 edge= 18.50% cagr= 20.55% dd= -20.4% sharpe= 1.03 mult= 15.98x trades=165
+  [cache build    7.7s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.1, IS2010 edge=-12.67% cagr= -0.10% dd= -47.0% sharpe= 0.10 mult= -0.01x trades=233
+  [cache build    9.7s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 3, "vcp.base_first_depth_min": 0.1, IS2016 edge=  3.78% cagr= 21.35% dd= -33.6% sharpe= 0.87 mult=  1.34x trades=313
+  [cache build    4.8s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.0, IS2004 edge= 13.15% cagr= 15.20% dd= -30.1% sharpe= 0.75 mult= 10.33x trades=225
+  [cache build    6.4s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.0, IS2010 edge= -0.06% cagr= 12.51% dd= -28.8% sharpe= 0.60 mult=  0.99x trades=316
+  [cache build    7.3s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.0, IS2016 edge= -2.52% cagr= 15.05% dd= -44.8% sharpe= 0.68 mult=  0.80x trades=368
+  [cache build    4.2s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.0, IS2004 edge= 21.73% cagr= 23.78% dd= -16.3% sharpe= 1.39 mult= 20.06x trades=109
+  [cache build    4.7s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.0, IS2010 edge= -6.05% cagr=  6.52% dd= -23.8% sharpe= 0.47 mult=  0.45x trades=132
+  [cache build    7.1s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.0, IS2016 edge=-12.00% cagr=  5.57% dd= -29.8% sharpe= 0.36 mult=  0.23x trades=206
+  [cache build    4.4s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.1, IS2004 edge=  9.20% cagr= 11.25% dd= -38.2% sharpe= 0.58 mult=  6.92x trades=198
+  [cache build    5.3s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.1, IS2010 edge= -0.61% cagr= 11.97% dd= -23.8% sharpe= 0.60 mult=  0.94x trades=251
+  [cache build    7.3s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.1, IS2016 edge=  2.74% cagr= 20.31% dd= -51.0% sharpe= 0.82 mult=  1.24x trades=326
+  [cache build    4.0s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.1, IS2004 edge= 15.50% cagr= 17.55% dd= -15.4% sharpe= 1.12 mult= 12.66x trades=95
+  [cache build    6.3s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.1, IS2010 edge= -6.82% cagr=  5.75% dd= -22.4% sharpe= 0.44 mult=  0.39x trades=106
+  [cache build    8.4s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_first_depth_min": 0.1, "base_max_days": 325, "bas
+[   filter] {"vcp.min_contractions": 4, "vcp.base_first_depth_min": 0.1, IS2016 edge= -6.68% cagr= 10.89% dd= -21.1% sharpe= 0.62 mult=  0.52x trades=172
+== stage filter best: {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt.rs_percentile_min": 70.0, "vcp.min_contractions": 3, "vcp.final_depth_max": 0.1, "vcp.vdu_ratio_max": 1.0, "vcp.contraction_ratio_max": 0.5, "vcp.swing_window": 3, "vcp.pivot_max_below_base_high": 0.15, "vcp.base_min_days": 15, "risk.stop_pct": 0.07, "risk.stop_use_contraction_low": true, "tt.sma200_slope_days": 63, "universe.min_price": 5.0, "exit.target_R": 6.0, "exit.trail_ma": 50, "exit.breakeven_at_R": 1.0, "exit.trail_activation_R": 0.0, "exit.trail_ma_bear": 0, "risk.max_positions": 8, "risk.risk_per_trade": 0.02, "risk.max_weight": 0.35, "risk.leverage": 2.0} (min-mult=2.022x)
+[     rank] {"entry.rank_by": "rs"}                  IS2004 edge= 16.57% cagr= 18.62% dd= -22.8% sharpe= 0.80 mult= 13.79x trades=293
+[     rank] {"entry.rank_by": "rs"}                  IS2010 edge=  4.46% cagr= 17.03% dd= -42.8% sharpe= 0.66 mult=  1.52x trades=431
+[     rank] {"entry.rank_by": "rs"}                  IS2016 edge= 14.99% cagr= 32.56% dd= -42.1% sharpe= 1.08 mult=  2.69x trades=451
+[     rank] {"entry.rank_by": "contractions"}        IS2004 edge= 14.59% cagr= 16.64% dd= -25.4% sharpe= 0.74 mult= 11.72x trades=290
+[     rank] {"entry.rank_by": "contractions"}        IS2010 edge=  1.69% cagr= 14.26% dd= -36.1% sharpe= 0.60 mult=  1.18x trades=431
+[     rank] {"entry.rank_by": "contractions"}        IS2016 edge= 14.00% cagr= 31.57% dd= -39.4% sharpe= 1.10 mult=  2.55x trades=446
+== stage rank best: {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt.rs_percentile_min": 70.0, "vcp.min_contractions": 3, "vcp.final_depth_max": 0.1, "vcp.vdu_ratio_max": 1.0, "vcp.contraction_ratio_max": 0.5, "vcp.swing_window": 3, "vcp.pivot_max_below_base_high": 0.15, "vcp.base_min_days": 15, "risk.stop_pct": 0.07, "risk.stop_use_contraction_low": true, "tt.sma200_slope_days": 63, "universe.min_price": 5.0, "exit.target_R": 6.0, "exit.trail_ma": 50, "exit.breakeven_at_R": 1.0, "exit.trail_activation_R": 0.0, "exit.trail_ma_bear": 0, "risk.max_positions": 8, "risk.risk_per_trade": 0.02, "risk.max_weight": 0.35, "risk.leverage": 2.0} (min-mult=2.022x)
+[   stops2] {"risk.stop_atr_mult": 0.0, "risk.stop_use_contraction_low": IS2004 edge= 16.06% cagr= 18.11% dd= -22.5% sharpe= 0.81 mult= 13.25x trades=280
+[   stops2] {"risk.stop_atr_mult": 0.0, "risk.stop_use_contraction_low": IS2010 edge=  8.14% cagr= 20.71% dd= -36.9% sharpe= 0.81 mult=  2.02x trades=409
+[   stops2] {"risk.stop_atr_mult": 0.0, "risk.stop_use_contraction_low": IS2016 edge= 11.09% cagr= 28.66% dd= -32.8% sharpe= 1.05 mult=  2.15x trades=437
+[   stops2] {"risk.stop_atr_mult": 0.0, "risk.stop_use_contraction_low": IS2004 edge= 17.46% cagr= 19.51% dd= -22.0% sharpe= 0.86 mult= 14.78x trades=239
+[   stops2] {"risk.stop_atr_mult": 0.0, "risk.stop_use_contraction_low": IS2010 edge=  7.91% cagr= 20.48% dd= -28.2% sharpe= 0.83 mult=  1.99x trades=336
+[   stops2] {"risk.stop_atr_mult": 0.0, "risk.stop_use_contraction_low": IS2016 edge=  6.04% cagr= 23.61% dd= -30.3% sharpe= 0.91 mult=  1.56x trades=361
+[   stops2] {"risk.stop_atr_mult": 1.5, "risk.stop_use_contraction_low": IS2004 edge= 11.23% cagr= 13.28% dd= -23.7% sharpe= 0.65 mult=  8.60x trades=383
+[   stops2] {"risk.stop_atr_mult": 1.5, "risk.stop_use_contraction_low": IS2010 edge= -2.60% cagr=  9.97% dd= -54.0% sharpe= 0.49 mult=  0.74x trades=588
+[   stops2] {"risk.stop_atr_mult": 1.5, "risk.stop_use_contraction_low": IS2016 edge=  8.02% cagr= 25.59% dd= -49.5% sharpe= 0.90 mult=  1.78x trades=699
+[   stops2] {"risk.stop_atr_mult": 1.5, "risk.stop_use_contraction_low": IS2004 edge= 11.39% cagr= 13.44% dd= -22.9% sharpe= 0.65 mult=  8.73x trades=382
+[   stops2] {"risk.stop_atr_mult": 1.5, "risk.stop_use_contraction_low": IS2010 edge= -5.22% cagr=  7.35% dd= -51.3% sharpe= 0.40 mult=  0.51x trades=593
+[   stops2] {"risk.stop_atr_mult": 1.5, "risk.stop_use_contraction_low": IS2016 edge=  6.74% cagr= 24.31% dd= -49.6% sharpe= 0.87 mult=  1.64x trades=690
+[   stops2] {"risk.stop_atr_mult": 2.5, "risk.stop_use_contraction_low": IS2004 edge= 16.89% cagr= 18.94% dd= -23.4% sharpe= 0.82 mult= 14.15x trades=302
+[   stops2] {"risk.stop_atr_mult": 2.5, "risk.stop_use_contraction_low": IS2010 edge=  0.15% cagr= 12.72% dd= -46.9% sharpe= 0.57 mult=  1.02x trades=449
+[   stops2] {"risk.stop_atr_mult": 2.5, "risk.stop_use_contraction_low": IS2016 edge=  6.72% cagr= 24.29% dd= -32.5% sharpe= 0.92 mult=  1.64x trades=477
+[   stops2] {"risk.stop_atr_mult": 2.5, "risk.stop_use_contraction_low": IS2004 edge= 17.78% cagr= 19.83% dd= -26.2% sharpe= 0.84 mult= 15.14x trades=278
+[   stops2] {"risk.stop_atr_mult": 2.5, "risk.stop_use_contraction_low": IS2010 edge=  1.56% cagr= 14.13% dd= -50.2% sharpe= 0.62 mult=  1.17x trades=403
+[   stops2] {"risk.stop_atr_mult": 2.5, "risk.stop_use_contraction_low": IS2016 edge=  9.85% cagr= 27.42% dd= -30.7% sharpe= 1.02 mult=  2.00x trades=411
+== stage stops2 best: {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt.rs_percentile_min": 70.0, "vcp.min_contractions": 3, "vcp.final_depth_max": 0.1, "vcp.vdu_ratio_max": 1.0, "vcp.contraction_ratio_max": 0.5, "vcp.swing_window": 3, "vcp.pivot_max_below_base_high": 0.15, "vcp.base_min_days": 15, "risk.stop_pct": 0.07, "risk.stop_use_contraction_low": true, "tt.sma200_slope_days": 63, "universe.min_price": 5.0, "exit.target_R": 6.0, "exit.trail_ma": 50, "exit.breakeven_at_R": 1.0, "exit.trail_activation_R": 0.0, "exit.trail_ma_bear": 0, "risk.max_positions": 8, "risk.risk_per_trade": 0.02, "risk.max_weight": 0.35, "risk.leverage": 2.0} (min-mult=2.022x)
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 50, "exit.time_stop_ IS2004 edge= 13.97% cagr= 16.02% dd= -27.6% sharpe= 0.73 mult= 11.12x trades=246
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 50, "exit.time_stop_ IS2010 edge= -2.65% cagr=  9.92% dd= -47.4% sharpe= 0.47 mult=  0.74x trades=375
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 50, "exit.time_stop_ IS2016 edge=  2.04% cagr= 19.61% dd= -36.2% sharpe= 0.75 mult=  1.18x trades=381
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 50, "exit.time_stop_ IS2004 edge= 11.53% cagr= 13.57% dd= -28.8% sharpe= 0.64 mult=  8.86x trades=268
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 50, "exit.time_stop_ IS2010 edge= -4.78% cagr=  7.80% dd= -48.9% sharpe= 0.40 mult=  0.55x trades=408
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 50, "exit.time_stop_ IS2016 edge=  1.75% cagr= 19.32% dd= -33.8% sharpe= 0.74 mult=  1.15x trades=418
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 65, "exit.time_stop_ IS2004 edge= 14.78% cagr= 16.83% dd= -28.1% sharpe= 0.74 mult= 11.92x trades=213
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 65, "exit.time_stop_ IS2010 edge= -5.24% cagr=  7.33% dd= -54.1% sharpe= 0.39 mult=  0.51x trades=328
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 65, "exit.time_stop_ IS2016 edge=  3.44% cagr= 21.01% dd= -33.4% sharpe= 0.78 mult=  1.30x trades=313
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 65, "exit.time_stop_ IS2004 edge= 18.29% cagr= 20.34% dd= -26.0% sharpe= 0.83 mult= 15.74x trades=241
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 65, "exit.time_stop_ IS2010 edge=  0.23% cagr= 12.80% dd= -48.9% sharpe= 0.56 mult=  1.02x trades=364
+[   exits2] {"exit.target_R": 0.0, "exit.trail_ma": 65, "exit.time_stop_ IS2016 edge= -0.97% cagr= 16.60% dd= -27.9% sharpe= 0.66 mult=  0.92x trades=352
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 50, "exit.time_stop_ IS2004 edge= 16.06% cagr= 18.11% dd= -22.5% sharpe= 0.81 mult= 13.25x trades=280
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 50, "exit.time_stop_ IS2010 edge=  8.14% cagr= 20.71% dd= -36.9% sharpe= 0.81 mult=  2.02x trades=409
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 50, "exit.time_stop_ IS2016 edge= 11.09% cagr= 28.66% dd= -32.8% sharpe= 1.05 mult=  2.15x trades=437
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 50, "exit.time_stop_ IS2004 edge= 16.30% cagr= 18.35% dd= -25.7% sharpe= 0.80 mult= 13.50x trades=306
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 50, "exit.time_stop_ IS2010 edge=  2.30% cagr= 14.87% dd= -46.1% sharpe= 0.64 mult=  1.25x trades=442
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 50, "exit.time_stop_ IS2016 edge= 16.54% cagr= 34.11% dd= -26.5% sharpe= 1.18 mult=  2.93x trades=490
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 65, "exit.time_stop_ IS2004 edge= 17.37% cagr= 19.42% dd= -23.1% sharpe= 0.84 mult= 14.68x trades=252
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 65, "exit.time_stop_ IS2010 edge= -1.75% cagr= 10.83% dd= -54.3% sharpe= 0.51 mult=  0.82x trades=381
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 65, "exit.time_stop_ IS2016 edge=  9.89% cagr= 27.46% dd= -30.4% sharpe= 1.02 mult=  2.00x trades=380
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 65, "exit.time_stop_ IS2004 edge= 18.25% cagr= 20.29% dd= -23.1% sharpe= 0.85 mult= 15.68x trades=301
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 65, "exit.time_stop_ IS2010 edge=  3.81% cagr= 16.39% dd= -45.2% sharpe= 0.68 mult=  1.44x trades=425
+[   exits2] {"exit.target_R": 6.0, "exit.trail_ma": 65, "exit.time_stop_ IS2016 edge= 10.04% cagr= 27.61% dd= -29.4% sharpe= 1.02 mult=  2.02x trades=438
+== stage exits2 best: {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt.rs_percentile_min": 70.0, "vcp.min_contractions": 3, "vcp.final_depth_max": 0.1, "vcp.vdu_ratio_max": 1.0, "vcp.contraction_ratio_max": 0.5, "vcp.swing_window": 3, "vcp.pivot_max_below_base_high": 0.15, "vcp.base_min_days": 15, "risk.stop_pct": 0.07, "risk.stop_use_contraction_low": true, "tt.sma200_slope_days": 63, "universe.min_price": 5.0, "exit.target_R": 6.0, "exit.trail_ma": 50, "exit.breakeven_at_R": 1.0, "exit.trail_activation_R": 0.0, "exit.trail_ma_bear": 0, "risk.max_positions": 8, "risk.risk_per_trade": 0.02, "risk.max_weight": 0.35, "risk.leverage": 2.0} (min-mult=2.022x)
+[     cash] {"backtest.idle_cash_in_spy": false}     IS2004 edge= 16.06% cagr= 18.11% dd= -22.5% sharpe= 0.81 mult= 13.25x trades=280
+[     cash] {"backtest.idle_cash_in_spy": false}     IS2010 edge=  8.14% cagr= 20.71% dd= -36.9% sharpe= 0.81 mult=  2.02x trades=409
+[     cash] {"backtest.idle_cash_in_spy": false}     IS2016 edge= 11.09% cagr= 28.66% dd= -32.8% sharpe= 1.05 mult=  2.15x trades=437
+[     cash] {"backtest.idle_cash_in_spy": true}      IS2004 edge= 15.52% cagr= 17.56% dd= -22.8% sharpe= 0.78 mult= 12.67x trades=280
+[     cash] {"backtest.idle_cash_in_spy": true}      IS2010 edge=  6.38% cagr= 18.95% dd= -33.4% sharpe= 0.76 mult=  1.77x trades=408
+[     cash] {"backtest.idle_cash_in_spy": true}      IS2016 edge= 10.39% cagr= 27.96% dd= -32.6% sharpe= 1.02 mult=  2.06x trades=437
+== stage cash best: {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt.rs_percentile_min": 70.0, "vcp.min_contractions": 3, "vcp.final_depth_max": 0.1, "vcp.vdu_ratio_max": 1.0, "vcp.contraction_ratio_max": 0.5, "vcp.swing_window": 3, "vcp.pivot_max_below_base_high": 0.15, "vcp.base_min_days": 15, "risk.stop_pct": 0.07, "risk.stop_use_contraction_low": true, "tt.sma200_slope_days": 63, "universe.min_price": 5.0, "exit.target_R": 6.0, "exit.trail_ma": 50, "exit.breakeven_at_R": 1.0, "exit.trail_activation_R": 0.0, "exit.trail_ma_bear": 0, "risk.max_positions": 8, "risk.risk_per_trade": 0.02, "risk.max_weight": 0.35, "risk.leverage": 2.0} (min-mult=2.022x)
+
+==== WINNER (in-sample) ====
+{
+  "entry.bo_vol_mult": 1.4,
+  "entry.rank_by": "tightness",
+  "tt.rs_percentile_min": 70.0,
+  "vcp.min_contractions": 3,
+  "vcp.final_depth_max": 0.1,
+  "vcp.vdu_ratio_max": 1.0,
+  "vcp.contraction_ratio_max": 0.5,
+  "vcp.swing_window": 3,
+  "vcp.pivot_max_below_base_high": 0.15,
+  "vcp.base_min_days": 15,
+  "risk.stop_pct": 0.07,
+  "risk.stop_use_contraction_low": true,
+  "tt.sma200_slope_days": 63,
+  "universe.min_price": 5.0,
+  "exit.target_R": 6.0,
+  "exit.trail_ma": 50,
+  "exit.breakeven_at_R": 1.0,
+  "exit.trail_activation_R": 0.0,
+  "exit.trail_ma_bear": 0,
+  "risk.max_positions": 8,
+  "risk.risk_per_trade": 0.02,
+  "risk.max_weight": 0.35,
+  "risk.leverage": 2.0
+}
+  [cache build    0.0s] ["calendar", "2022-01-01", "2026-08-01"]
+  [cache build    0.0s] ["market", "2022-01-01", "2026-08-01", 200]
+  [cache build   28.6s] ["data", "2022-01-01", "2026-08-01", 260]
+  [cache build    5.8s] ["rs", "2022-01-01", "2026-08-01", 260]
+  [cache build    4.5s] ["tt", "2022-01-01", "2026-08-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    1.1s] ["liq", "2022-01-01", "2026-08-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build   12.6s] ["setups", "2022-01-01", "2026-08-01", 260, {"base_first_depth_min": 0.0, "base_max_days": 325, "bas
+[ validate] winner_OOS                               OOS    edge=-21.09% cagr= -9.34% dd= -57.4% sharpe=-0.23 mult= -0.55x trades=340
+
+---- winner on OOS (2022-01-01 -> 2026-08-01) ----
+Period            : 2022-01-03 -> 2026-07-31
+Final equity      : $      63,877
+Total return      :    -36.1%   (SPY: 66.2%)
+CAGR              :    -9.34%   (SPY: 11.75%)
+Sharpe            :    -0.22
+Max drawdown      :    -57.4%   (SPY: -24.5%)
+Avg exposure      :    135.2%
+PROFIT MULTIPLE   :    -0.55x  vs SPY buy&hold
+Trades            : 340  |  win rate 21.2%  |  avg R -0.03  |  PF 0.85
+Avg win / loss    : $2,072 / $-654
+  [cache build    0.0s] ["calendar", "2004-01-01", "2026-08-01"]
+  [cache build    0.0s] ["market", "2004-01-01", "2026-08-01", 200]

@@ -158,6 +158,27 @@ def test_leverage_expands_buying_power_and_charges_interest():
     assert res2.equity.iloc[-1] < 100_000      # interest was actually charged
 
 
+def test_pyramid_adds_to_winner_and_accounting_holds():
+    # breakout at ~100, runs to 120 (>2R with 5% stop) -> pyramid add-on next open
+    closes = [95.0] * 12 + [101.0] + list(np.linspace(102, 130, 12)) + [130.0] * 5
+    sd = make_symbol(closes, spread=0.0)
+    setup = Setup(symbol="TEST", confirm_idx=10, pivot=100.0, support_low=95.0,
+                  base_high=105.0, base_start_idx=2, n_contractions=2,
+                  depths=(0.2, 0.05), vdu_ratio=0.5)
+    cfg = _cfg(risk_per_trade=0.02, max_weight=0.50)
+    cfg.risk.pyramid_at_R = 2.0
+    cfg.risk.pyramid_frac = 0.5
+    res = _run(sd, len(closes), setup, cfg)
+    cfg2 = _cfg(risk_per_trade=0.02, max_weight=0.50)
+    res2 = _run(sd, len(closes), setup, cfg2)   # no pyramid control
+    tr, tr2 = res.trades[0], res2.trades[0]
+    assert tr.shares > tr2.shares               # add-on happened
+    assert tr.entry_price > tr2.entry_price     # blended entry above initial fill
+    assert res.equity.iloc[-1] > res2.equity.iloc[-1]  # winner grew -> more profit
+    assert math.isclose(res.equity.iloc[-1], 100_000 + sum(t.pnl for t in res.trades),
+                        rel_tol=1e-9)           # accounting still exact
+
+
 def test_chase_guard_skips_runaway_gap():
     # opens 10% above the pivot -> too extended, must not chase
     closes = [95.0] * 12 + [110.0] + [110.0] * 5
