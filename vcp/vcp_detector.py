@@ -107,9 +107,14 @@ def detect_setups(sd: SymbolData, cfg: Config) -> list[Setup]:
                 continue
             if depths[-1] > v.final_depth_max:
                 continue
+            if depths[0] < v.base_first_depth_min:
+                continue    # no real correction opened the base - nothing was absorbed
             pivot = sel[-1][0][2]
             if pivot < (1.0 - v.pivot_max_below_base_high) * struct_top:
                 continue
+            if (v.pivot_min_below_base_high > 0
+                    and pivot > (1.0 - v.pivot_min_below_base_high) * struct_top):
+                continue    # at-the-high pivots underperform (see setup_analysis)
             best = (n_c, depths, base_start)
             break
         if best is None:

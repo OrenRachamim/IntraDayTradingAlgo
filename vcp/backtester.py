@@ -17,7 +17,7 @@ import pandas as pd
 
 from .config import Config
 from .data import Market, SymbolData
-from .indicators import sma
+from .indicators import atr, sma
 from .vcp_detector import Setup
 
 
@@ -80,6 +80,7 @@ class Backtester:
         self.start_idx = start_idx
         self._trail_cache: dict[str, np.ndarray] = {}
         self._volsma_cache: dict[str, np.ndarray] = {}
+        self._atr_cache: dict[str, np.ndarray] = {}
         # setups indexed by confirmation bar for fast activation
         self.setups_by_day: dict[int, list[Setup]] = {}
         self.n_setups = 0
@@ -104,6 +105,14 @@ class Backtester:
         if symbol not in self._volsma_cache:
             self._volsma_cache[symbol] = sma(self.data[symbol].volume.astype(np.float64), 50)
         return self._volsma_cache[symbol]
+
+    def _atr20(self, symbol: str) -> np.ndarray:
+        if symbol not in self._atr_cache:
+            sd = self.data[symbol]
+            self._atr_cache[symbol] = atr(sd.high.astype(np.float64),
+                                          sd.low.astype(np.float64),
+                                          sd.close.astype(np.float64), 20)
+        return self._atr_cache[symbol]
 
     # ---- accounting helpers -------------------------------------------------
     def _buy_cost(self, price: float) -> float:
@@ -222,10 +231,13 @@ class Backtester:
                     volsma = self._vol_sma50(sym)[t - 1]
                     if math.isnan(volsma) or float(sd.volume[t]) < cfg.entry.bo_vol_mult * volsma:
                         continue
+                rs_val = float(self.rs[sym][t - 1]) if not math.isnan(self.rs[sym][t - 1]) else 0.0
                 if cfg.entry.rank_by == "tightness":
                     rank = -s.depths[-1]        # tighter final contraction first
+                elif cfg.entry.rank_by == "contractions":
+                    rank = s.n_contractions * 1000.0 + rs_val   # structure quality, RS tiebreak
                 else:
-                    rank = float(self.rs[sym][t - 1]) if not math.isnan(self.rs[sym][t - 1]) else 0.0
+                    rank = rs_val
                 candidates.append((rank, sym, a, bear))
 
             if candidates:
@@ -253,6 +265,10 @@ class Backtester:
                     fill = o if o >= trigger else trigger
                     exec_price = self._buy_cost(fill)
                     stop = fill * (1 - cfg.risk.stop_pct)
+                    if cfg.risk.stop_atr_mult > 0:
+                        a_val = self._atr20(sym)[t - 1]
+                        if not math.isnan(a_val) and a_val > 0:
+                            stop = fill - cfg.risk.stop_atr_mult * a_val
                     if cfg.risk.stop_use_contraction_low and s.support_low > stop:
                         stop = s.support_low        # tighter stop under support
                     stop = max(stop, fill * (1 - cfg.risk.stop_max_pct))

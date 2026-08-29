@@ -29,6 +29,15 @@ def rs_raw_score(close: np.ndarray) -> np.ndarray:
             + pct_return(close, 189) + pct_return(close, 252))
 
 
+def atr(high: np.ndarray, low: np.ndarray, close: np.ndarray, window: int = 20) -> np.ndarray:
+    """Average True Range (simple moving average of true range)."""
+    h = pd.Series(high, dtype="float64")
+    l = pd.Series(low, dtype="float64")
+    c_prev = pd.Series(close, dtype="float64").shift(1)
+    tr = pd.concat([h - l, (h - c_prev).abs(), (l - c_prev).abs()], axis=1).max(axis=1)
+    return tr.rolling(window, min_periods=window).mean().to_numpy()
+
+
 def swing_points(high: np.ndarray, low: np.ndarray, w: int) -> tuple[np.ndarray, np.ndarray]:
     """Boolean masks of swing highs/lows: bar i is a swing high if high[i] is the
     maximum of high[i-w .. i+w] (strictly greater than all neighbors that differ).

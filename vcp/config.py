@@ -40,7 +40,9 @@ class VCPConfig:
     final_depth_max: float = 0.10         # last contraction tightness
     base_min_days: int = 25               # ~5 weeks
     base_max_days: int = 325              # ~65 weeks
+    base_first_depth_min: float = 0.0     # require a real correction to open the base (0 = off)
     pivot_max_below_base_high: float = 0.10  # pivot must clear most overhead supply
+    pivot_min_below_base_high: float = 0.0   # pivot must sit under the top - avoid at-the-high pivots (0 = off)
     vdu_ratio_max: float = 0.85           # volume dry-up: final-leg vol vs 50d avg
     setup_max_active_days: int = 40       # setup expires if no breakout
 
@@ -50,7 +52,7 @@ class EntryConfig:
     breakout_buffer: float = 0.002    # trigger = pivot * (1 + buffer)
     max_chase_pct: float = 0.05       # skip fills further than this above pivot
     bo_vol_mult: float = 0.0          # breakout-day volume >= mult * 50d avg (0 = off)
-    rank_by: str = "rs"               # candidate ranking: "rs" | "tightness"
+    rank_by: str = "rs"               # candidate ranking: "rs" | "tightness" | "contractions"
     market_filter: bool = True        # only enter when SPY > its 200-day SMA
     market_filter_ma: int = 200
     bear_size_scale: float = 0.0      # 0 = no entries in bear regime; >0 = enter at this size fraction
@@ -59,6 +61,7 @@ class EntryConfig:
 @dataclass
 class RiskConfig:
     stop_pct: float = 0.06            # initial stop distance cap (3-8% typical, <=10%)
+    stop_atr_mult: float = 0.0        # volatility-scaled stop: fill - mult * ATR20 (0 = use stop_pct)
     stop_use_contraction_low: bool = True  # tighter of stop_pct / final contraction low
     stop_max_pct: float = 0.10        # absolute never-exceed
     risk_per_trade: float = 0.01      # fraction of equity risked per trade
