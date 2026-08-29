@@ -42,6 +42,10 @@ def main() -> None:
     ap.add_argument("--top", type=int, default=25)
     ap.add_argument("--no-refresh", action="store_true",
                     help="skip Yahoo refresh (offline mode, bulk data only)")
+    ap.add_argument("--refresh-universe", action="store_true",
+                    help="refresh EVERY trend-template-passing symbol from Yahoo "
+                         "(several minutes) so setups formed since the bulk-data "
+                         "update are also found - the true daily mode")
     ap.add_argument("--max-dist", type=float, default=15.0,
                     help="hide candidates further than this %% below their trigger")
     args = ap.parse_args()
@@ -61,19 +65,34 @@ def main() -> None:
     print(f"phase 1: {len(phase1)} pending candidates on bulk data", file=sys.stderr)
 
     result = phase1
-    if not args.no_refresh and not phase1.empty:
-        syms = phase1.symbol.tolist()
-        print(f"refreshing {len(syms)} candidates from Yahoo ...", file=sys.stderr)
-        ok = 0
-        for s in syms:
-            ok += bool(refresh_symbol_file(s))
-            time.sleep(0.4)                      # be polite to the API
-        print(f"refreshed {ok}/{len(syms)}", file=sys.stderr)
-        # rebuild on current bars and keep only candidates that are still live
-        art = build_artifacts(cfg, DataCache())
-        fresh = scan(art, cfg, args.equity, max_staleness_days=3)
-        result = fresh[fresh.symbol.isin(syms)
-                       & (fresh.dist_to_trigger_pct.abs() <= args.max_dist)]
+    if not args.no_refresh:
+        if args.refresh_universe:
+            # every symbol currently passing trend template + liquidity at its
+            # own last bar - so setups formed since the bulk update are found too
+            syms = sorted({s for s in art["symbols"]
+                           if art["tt_masks"][s][art["data"][s].last_idx]
+                           and art["liq_masks"][s][art["data"][s].last_idx]}
+                          | set(phase1.symbol))
+        else:
+            syms = phase1.symbol.tolist()
+        if syms:
+            print(f"refreshing {len(syms)} symbols from Yahoo "
+                  f"(~{len(syms)*0.5/60:.0f} min) ...", file=sys.stderr)
+            ok = 0
+            for s in syms:
+                ok += bool(refresh_symbol_file(s))
+                time.sleep(0.4)                  # be polite to the API
+            print(f"refreshed {ok}/{len(syms)}", file=sys.stderr)
+            # rebuild on current bars; keep only refreshed, still-live candidates
+            art = build_artifacts(cfg, DataCache())
+            fresh = scan(art, cfg, args.equity, max_staleness_days=3)
+            if fresh.empty:
+                result = fresh
+            else:
+                result = fresh[fresh.symbol.isin(syms)
+                               & (fresh.dist_to_trigger_pct.abs() <= args.max_dist)]
+            print(f"phase 2: {len(result)} candidates live on current bars "
+                  f"({len(phase1)} were pending on bulk data)", file=sys.stderr)
 
     market_on = bool(art["market"].regime_ok[-1])
     print(f"\n=== VCP entry candidates | as of {cfg.backtest.end} | "

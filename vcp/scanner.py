@@ -132,7 +132,8 @@ def scan(artifacts: dict, cfg: Config, equity: float,
             continue
         rows.append(row)
 
-    df = pd.DataFrame([vars(r) for r in rows])
+    columns = list(ScanRow.__dataclass_fields__)
+    df = pd.DataFrame([vars(r) for r in rows], columns=columns)
     if df.empty:
         return df
     if cfg.entry.rank_by == "tightness":
