@@ -233,6 +233,16 @@ class Backtester:
                 # equity for sizing = cash + current marks
                 mark_value = sum(p.last_mark * p.trade.shares for p in positions.values())
                 equity_now = cash + mark_value
+                # progressive exposure: margin only in a healthy regime and
+                # (optionally) while our own equity curve is trending up
+                eff_lev = cfg.risk.leverage
+                if cfg.entry.market_filter and not self.market.regime_ok[t - 1]:
+                    eff_lev = cfg.risk.leverage_bear
+                ecf = cfg.risk.equity_curve_filter
+                j = t - self.start_idx
+                if ecf > 0 and j >= ecf:
+                    if equity_curve[j - 1] < equity_curve[j - ecf:j].mean():
+                        eff_lev = min(eff_lev, 1.0)
                 for rs_rank, sym, a, bear in candidates:
                     if len(positions) >= cfg.risk.max_positions:
                         break
@@ -250,8 +260,8 @@ class Backtester:
                     if risk_ps <= 0:
                         continue
                     size_scale = cfg.entry.bear_size_scale if bear else 1.0
-                    # buying power = equity * leverage - current invested value
-                    buying_power = cash + equity_now * (cfg.risk.leverage - 1.0)
+                    # buying power = equity * effective leverage - invested value
+                    buying_power = cash + equity_now * (eff_lev - 1.0)
                     shares = int(min(
                         equity_now * cfg.risk.risk_per_trade * size_scale / risk_ps,
                         equity_now * cfg.risk.max_weight * size_scale / exec_price,
@@ -301,6 +311,10 @@ class Backtester:
 
             if cash < 0:  # margin interest on borrowed funds
                 cash += cash * cfg.costs.margin_rate_annual / 252.0
+            elif cash > 0 and cfg.backtest.idle_cash_in_spy and t > 0:
+                spy_prev, spy_now = self.market.close[t - 1], self.market.close[t]
+                if not (math.isnan(spy_prev) or math.isnan(spy_now)) and spy_prev > 0:
+                    cash *= spy_now / spy_prev   # core-satellite: idle cash rides the index
             mark_value = sum(p.last_mark * p.trade.shares for p in positions.values())
             equity_curve[t - self.start_idx] = cash + mark_value
             exposure[t - self.start_idx] = mark_value / max(cash + mark_value, 1e-9)

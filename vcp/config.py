@@ -65,6 +65,8 @@ class RiskConfig:
     max_positions: int = 8
     max_weight: float = 0.20          # per-position cap as fraction of equity
     leverage: float = 1.0             # buying power = equity * leverage (Minervini trades up to 2:1 margin)
+    leverage_bear: float = 1.0        # buying power multiplier while the market regime is off
+    equity_curve_filter: int = 0      # margin allowed only while equity > SMA(equity, N); 0 = always
 
 
 @dataclass
@@ -89,6 +91,7 @@ class BacktestConfig:
     start: str = "2004-01-01"
     end: str = "2026-08-01"
     initial_capital: float = 100_000.0
+    idle_cash_in_spy: bool = False    # park un-deployed cash in SPY (core-satellite variant)
 
 
 @dataclass
