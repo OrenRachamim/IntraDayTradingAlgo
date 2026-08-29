@@ -1,0 +1,10 @@
+  [cache build    0.0s] ["calendar", "2004-01-01", "2010-01-01"]
+  [cache build    0.0s] ["market", "2004-01-01", "2010-01-01", 200]
+  [cache build   11.7s] ["data", "2004-01-01", "2010-01-01", 260]
+  [cache build    2.3s] ["rs", "2004-01-01", "2010-01-01", 260]
+  [cache build    1.7s] ["tt", "2004-01-01", "2010-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    0.4s] ["liq", "2004-01-01", "2010-01-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build    6.0s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_max_days": 325, "base_max_depth": 0.35, "base_min
+[   round8] ctrl_lev2                                IS2004 edge= 16.06% cagr= 18.11% dd= -22.5% sharpe= 0.81 mult= 13.25x trades=280
+  [cache build    0.0s] ["calendar", "2010-01-01", "2016-01-01"]
+  [cache build    0.0s] ["market", "2010-01-01", "2016-01-01", 200]
