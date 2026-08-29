@@ -81,6 +81,28 @@ paper-trading in the current regime first.
 | 6 | Leverage policies + core-satellite idle cash | — | — | SPY-parked cash ate 2008 → regime-gated |
 | 7 | Regime-gated SPY parking | no IS gain | — | Unconditional margin still best IS |
 | 8 | Failed-breakout fast exit | slightly worse IS | — | Cuts recovering winners too |
+| 9 | Analysis-derived quality gates (4+ contractions, deep base opening, off-top pivots), ATR stops, structure ranking, time stop | all below control | — | Per-trade quality gains don't survive the portfolio breadth cost |
+| 10 | Pyramiding into winners (+1R/+2R adds, wider weight caps) | near-miss (8.04% vs 8.14% worst-window edge) | — | Slightly more risk, no edge gain |
+| 11 | Weekly-timeframe VCP layer traded daily | hurt every window | — | Weekly setups displace better daily entries |
+
+### The doubling attempt (rounds 9-11) — honest conclusion
+
+The follow-up objective was to *double* the full-period profitability
+(CAGR 15.1% → ~18.5%+). Six structurally distinct improvement families were
+implemented and swept walk-forward (~200 backtests): setup-quality gates
+derived from the trade-outcome analysis (`scripts/analyze_setups.py`),
+ATR-scaled stops, structure-quality candidate ranking, dead-money time stops,
+scale-ins (pyramiding), and a weekly-timeframe VCP layer. **None beat the
+round-5 configuration's worst-window CAGR edge.** The binding constraints are
+consistent: the 2010-2016 window (choppy, low-momentum regime) and the
+post-2022 edge decay. The evidence says the round-5 config sits at a robust
+local maximum for this strategy class — long-only daily VCP breakouts at
+Reg-T 2:1 — on this dataset. A "doubled" backtest could be manufactured by
+dropping the walk-forward discipline and tuning on the full period directly;
+that number would be meaningless, and we declined to produce it. Paths that
+could genuinely raise the ceiling require new inputs: fundamental data
+(earnings acceleration - the F and C of SEPA), intraday data (precise pivot
+fills), a short book in bear regimes, or options overlays.
 
 Key drivers found along the way (each verified across regime windows):
 breakout-day volume ≥1.4× average, ≥3 contractions with overall depth halving,
