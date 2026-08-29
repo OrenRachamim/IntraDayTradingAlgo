@@ -64,7 +64,27 @@ python scripts/scan_today.py --equity 100000 --refresh-universe
 #   trigger (buy-stop price), stop (initial stop), shares/position size for
 #   your equity, pattern stats (contractions, tightness, volume dry-up),
 #   RS percentile, and the market-regime state.
+
+# send today's scan to Telegram (TradingView link per symbol):
+export TELEGRAM_BOT_TOKEN=...   # from @BotFather
+export TELEGRAM_CHAT_ID=...     # message your bot, then api.telegram.org/bot<TOKEN>/getUpdates
+python scripts/scan_today.py --refresh-universe --telegram
 ```
+
+## Automatic daily scan (GitHub Actions -> Telegram)
+
+`.github/workflows/daily-scan.yml` runs the full scan every weekday at
+21:30 UTC (after the US close) and sends the candidate list to Telegram.
+One-time setup:
+
+1. Create a bot with [@BotFather](https://t.me/BotFather) and copy the token.
+2. Send your bot any message, then open
+   `https://api.telegram.org/bot<TOKEN>/getUpdates` and copy `chat.id`.
+3. In GitHub: **Settings → Secrets and variables → Actions** → add
+   `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
+4. GitHub runs *scheduled* workflows only from the repository's **default
+   branch** — merge this branch (or set it as default) to activate the
+   schedule. Test any time via **Actions → daily-vcp-scan → Run workflow**.
 
 ## Repository layout
 
