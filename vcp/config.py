@@ -34,7 +34,8 @@ class VCPConfig:
     swing_window: int = 3             # bars on each side defining a swing high/low
     min_contractions: int = 2
     max_contractions: int = 6
-    contraction_ratio_max: float = 0.75   # depth[i] <= ratio * depth[i-1]
+    contraction_ratio_max: float = 0.75   # final depth <= ratio * first depth (envelope)
+    noise_tolerance: float = 1.2          # depth[i] <= tol * depth[i-1] (local noise allowed)
     base_max_depth: float = 0.35          # deepest (first) contraction cap
     final_depth_max: float = 0.10         # last contraction tightness
     base_min_days: int = 25               # ~5 weeks
@@ -49,6 +50,7 @@ class EntryConfig:
     breakout_buffer: float = 0.002    # trigger = pivot * (1 + buffer)
     max_chase_pct: float = 0.05       # skip fills further than this above pivot
     bo_vol_mult: float = 0.0          # breakout-day volume >= mult * 50d avg (0 = off)
+    rank_by: str = "rs"               # candidate ranking: "rs" | "tightness"
     market_filter: bool = True        # only enter when SPY > its 200-day SMA
     market_filter_ma: int = 200
 
@@ -68,6 +70,7 @@ class ExitConfig:
     target_R: float = 3.0             # sell into strength at this R-multiple (0 = off)
     breakeven_at_R: float = 1.0       # raise stop to entry after this gain (0 = off)
     trail_ma: int = 50                # exit on close below this SMA (0 = off)
+    trail_activation_R: float = 0.0   # arm the trail only after this gain (0 = always on)
     time_stop_days: int = 0           # exit stagnant trades after N days (0 = off)
 
 

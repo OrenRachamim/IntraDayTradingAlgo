@@ -45,6 +45,7 @@ class _Position:
     init_risk: float            # per share
     target: float               # 0 = off
     breakeven_done: bool = False
+    trail_armed: bool = False
     exit_at_open: str = ""      # reason string when an exit is scheduled
     last_mark: float = 0.0
 
@@ -78,6 +79,7 @@ class Backtester:
         self.market = market
         self.start_idx = start_idx
         self._trail_cache: dict[str, np.ndarray] = {}
+        self._volsma_cache: dict[str, np.ndarray] = {}
         # setups indexed by confirmation bar for fast activation
         self.setups_by_day: dict[int, list[Setup]] = {}
         self.n_setups = 0
@@ -93,6 +95,11 @@ class Backtester:
         if symbol not in self._trail_cache:
             self._trail_cache[symbol] = sma(self.data[symbol].close.astype(np.float64), w)
         return self._trail_cache[symbol]
+
+    def _vol_sma50(self, symbol: str) -> np.ndarray:
+        if symbol not in self._volsma_cache:
+            self._volsma_cache[symbol] = sma(self.data[symbol].volume.astype(np.float64), 50)
+        return self._volsma_cache[symbol]
 
     # ---- accounting helpers -------------------------------------------------
     def _buy_cost(self, price: float) -> float:
@@ -207,11 +214,14 @@ class Backtester:
                     del active[sym]  # gapped too far above pivot: chase guard
                     continue
                 if cfg.entry.bo_vol_mult > 0:
-                    volsma = sma(sd.volume.astype(np.float64), 50)[t - 1]
+                    volsma = self._vol_sma50(sym)[t - 1]
                     if math.isnan(volsma) or float(sd.volume[t]) < cfg.entry.bo_vol_mult * volsma:
                         continue
-                rs_rank = float(self.rs[sym][t - 1]) if not math.isnan(self.rs[sym][t - 1]) else 0.0
-                candidates.append((rs_rank, sym, a))
+                if cfg.entry.rank_by == "tightness":
+                    rank = -s.depths[-1]        # tighter final contraction first
+                else:
+                    rank = float(self.rs[sym][t - 1]) if not math.isnan(self.rs[sym][t - 1]) else 0.0
+                candidates.append((rank, sym, a))
 
             if candidates:
                 candidates.sort(key=lambda x: -x[0])
@@ -267,9 +277,14 @@ class Backtester:
                         and h >= tr.entry_price + cfg.exit.breakeven_at_R * pos.init_risk):
                     pos.stop = max(pos.stop, tr.entry_price)   # effective from tomorrow
                     pos.breakeven_done = True
+                act_R = cfg.exit.trail_activation_R
+                if act_R > 0 and not pos.trail_armed:
+                    if h >= tr.entry_price + act_R * pos.init_risk:
+                        pos.trail_armed = True
                 trail = self._trail_sma(sym)
                 if (trail is not None and not math.isnan(trail[t]) and c < trail[t]
-                        and t > tr.entry_idx):
+                        and t > tr.entry_idx
+                        and (act_R <= 0 or pos.trail_armed)):
                     pos.exit_at_open = "trail_ma"
                 if (cfg.exit.time_stop_days > 0 and not pos.exit_at_open
                         and t - tr.entry_idx >= cfg.exit.time_stop_days

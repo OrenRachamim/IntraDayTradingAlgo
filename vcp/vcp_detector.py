@@ -89,21 +89,26 @@ def detect_setups(sd: SymbolData, cfg: Config) -> list[Setup]:
             depths = [(h[2] - l[2]) / h[2] for h, l in sel]
             if any(d <= 0 for d in depths):
                 continue
-            if any(depths[i] > v.contraction_ratio_max * depths[i - 1]
+            # tightening envelope: overall depth roughly halves first -> last,
+            # with local noise tolerated between consecutive contractions
+            if depths[-1] > v.contraction_ratio_max * depths[0]:
+                continue
+            if any(depths[i] > v.noise_tolerance * depths[i - 1]
                    for i in range(1, len(depths))):
                 continue
             base_start = sel[0][0][1]
-            base_high = sel[0][0][2]
-            # base high must actually be the top of the whole structure
-            if np.nanmax(high[base_start:s_idx + 1]) > base_high * 1.001:
-                continue
             base_len = s_idx - base_start
             if not (v.base_min_days <= base_len <= v.base_max_days):
                 continue
-            if depths[0] > v.base_max_depth or depths[-1] > v.final_depth_max:
+            # measure the structure against its true top, not just the first swing
+            struct_top = float(np.nanmax(high[base_start:s_idx + 1]))
+            struct_low = float(np.nanmin(low[base_start:s_idx + 1]))
+            if struct_top <= 0 or (struct_top - struct_low) / struct_top > v.base_max_depth:
+                continue
+            if depths[-1] > v.final_depth_max:
                 continue
             pivot = sel[-1][0][2]
-            if pivot < (1.0 - v.pivot_max_below_base_high) * base_high:
+            if pivot < (1.0 - v.pivot_max_below_base_high) * struct_top:
                 continue
             best = (n_c, depths, base_start)
             break

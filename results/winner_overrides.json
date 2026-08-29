@@ -1,0 +1,17 @@
+{
+  "risk.max_positions": 5,
+  "risk.risk_per_trade": 0.02,
+  "risk.max_weight": 0.25,
+  "exit.target_R": 0.0,
+  "exit.trail_ma": 50,
+  "exit.breakeven_at_R": 0.0,
+  "vcp.contraction_ratio_max": 0.75,
+  "vcp.final_depth_max": 0.08,
+  "vcp.vdu_ratio_max": 0.85,
+  "vcp.min_contractions": 2,
+  "risk.stop_pct": 0.08,
+  "risk.stop_use_contraction_low": true,
+  "entry.market_filter": true,
+  "entry.market_filter_ma": 100,
+  "vcp.setup_max_active_days": 40
+}

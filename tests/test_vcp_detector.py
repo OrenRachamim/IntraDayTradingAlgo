@@ -15,9 +15,8 @@ def test_detects_textbook_vcp():
     assert s.n_contractions >= 2
     # pivot is the high of the final contraction (close 96 * (1+spread))
     assert abs(s.pivot - 96 * 1.01) / s.pivot < 0.02
-    # depths must be contracting
-    for a, b in zip(s.depths, s.depths[1:]):
-        assert b <= cfg.vcp.contraction_ratio_max * a + 1e-9
+    # tightening envelope: overall depth contracts first -> last
+    assert s.depths[-1] <= cfg.vcp.contraction_ratio_max * s.depths[0] + 1e-9
     assert s.vdu_ratio <= cfg.vcp.vdu_ratio_max
 
 

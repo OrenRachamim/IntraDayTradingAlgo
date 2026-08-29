@@ -36,35 +36,47 @@ OOS_START, OOS_END = "2017-01-01", "2026-08-01"
 FULL_START, FULL_END = "2004-01-01", "2026-08-01"
 
 # Parameter groups swept one stage at a time; each stage keeps the best combo.
+# Round 2 grids: entry quality and pattern shape first (the big levers under the
+# envelope-tightening detector), then exits/exposure/stops/market regime.
 STAGES: list[tuple[str, list[dict]]] = [
-    ("exposure", [
-        {"risk.max_positions": mp, "risk.risk_per_trade": rpt, "risk.max_weight": mw}
-        for mp in (5, 8, 12)
-        for rpt in (0.01, 0.02)
-        for mw in (0.15, 0.25)
-    ]),
-    ("exits", [
-        {"exit.target_R": tr, "exit.trail_ma": tm, "exit.breakeven_at_R": be}
-        for tr in (0.0, 2.0, 3.0)
-        for tm in (20, 50)
-        for be in (0.0, 1.0)
-    ]),
-    ("screen", [
-        {"tt.rs_percentile_min": rs, "universe.min_dollar_volume": dv}
-        for rs in (70.0, 80.0, 90.0)
-        for dv in (2e6, 10e6)
+    ("quality", [
+        {"entry.bo_vol_mult": bv, "entry.rank_by": rb, "tt.rs_percentile_min": rs}
+        for bv in (0.0, 1.4)
+        for rb in ("rs", "tightness")
+        for rs in (70.0, 85.0)
     ]),
     ("vcp_shape", [
-        {"vcp.contraction_ratio_max": cr, "vcp.final_depth_max": fd,
-         "vcp.vdu_ratio_max": vdu, "vcp.min_contractions": mc}
-        for cr in (0.6, 0.75, 0.9)
-        for fd in (0.08, 0.12)
-        for vdu in (0.7, 0.85, 1.2)
+        {"vcp.min_contractions": mc, "vcp.final_depth_max": fd,
+         "vcp.vdu_ratio_max": vdu, "vcp.contraction_ratio_max": cr}
         for mc in (2, 3)
+        for fd in (0.06, 0.10)
+        for vdu in (0.7, 1.0)
+        for cr in (0.5, 0.75)
+    ]),
+    ("geometry", [
+        {"vcp.swing_window": sw, "vcp.pivot_max_below_base_high": pm,
+         "vcp.base_min_days": bm}
+        for sw in (2, 3, 5)
+        for pm in (0.05, 0.15)
+        for bm in (15, 30)
+    ]),
+    ("exits", [
+        {"exit.target_R": tr, "exit.trail_ma": tm, "exit.breakeven_at_R": be,
+         "exit.trail_activation_R": ta}
+        for tr in (0.0, 5.0)
+        for tm in (20, 50, 100)
+        for be in (0.0, 1.0)
+        for ta in (0.0, 1.0)
+    ]),
+    ("exposure", [
+        {"risk.max_positions": mp, "risk.risk_per_trade": rpt, "risk.max_weight": mw}
+        for mp in (4, 6, 8)
+        for rpt in (0.015, 0.025)
+        for mw in (0.20, 0.30)
     ]),
     ("stops", [
         {"risk.stop_pct": sp, "risk.stop_use_contraction_low": scl}
-        for sp in (0.04, 0.06, 0.08)
+        for sp in (0.05, 0.08, 0.10)
         for scl in (True, False)
     ]),
     ("market", [
