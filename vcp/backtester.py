@@ -291,6 +291,9 @@ class Backtester:
                 if math.isnan(c):
                     continue
                 tr = pos.trade
+                if (cfg.exit.fail_close_below_pivot and t == tr.entry_idx
+                        and c < tr.pivot):
+                    pos.exit_at_open = "failed_breakout"
                 if (cfg.exit.breakeven_at_R > 0 and not pos.breakeven_done
                         and h >= tr.entry_price + cfg.exit.breakeven_at_R * pos.init_risk):
                     pos.stop = max(pos.stop, tr.entry_price)   # effective from tomorrow

@@ -1,2 +1,90 @@
   [cache build    0.0s] ["calendar", "2004-01-01", "2010-01-01"]
   [cache build    0.0s] ["market", "2004-01-01", "2010-01-01", 200]
+  [cache build   11.9s] ["data", "2004-01-01", "2010-01-01", 260]
+  [cache build    2.4s] ["rs", "2004-01-01", "2010-01-01", 260]
+  [cache build    1.8s] ["tt", "2004-01-01", "2010-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    0.4s] ["liq", "2004-01-01", "2010-01-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build    6.0s] ["setups", "2004-01-01", "2010-01-01", 260, {"base_max_days": 325, "base_max_depth": 0.35, "base_min
+[   round6] lev2_uncond                              IS2004 edge= 16.06% cagr= 18.11% dd= -22.5% sharpe= 0.81 mult= 13.25x trades=280
+  [cache build    0.0s] ["calendar", "2010-01-01", "2016-01-01"]
+  [cache build    0.0s] ["market", "2010-01-01", "2016-01-01", 200]
+  [cache build   14.8s] ["data", "2010-01-01", "2016-01-01", 260]
+  [cache build    2.8s] ["rs", "2010-01-01", "2016-01-01", 260]
+  [cache build    2.3s] ["tt", "2010-01-01", "2016-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    0.5s] ["liq", "2010-01-01", "2016-01-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build    7.8s] ["setups", "2010-01-01", "2016-01-01", 260, {"base_max_days": 325, "base_max_depth": 0.35, "base_min
+[   round6] lev2_uncond                              IS2010 edge=  8.14% cagr= 20.71% dd= -36.9% sharpe= 0.81 mult=  2.02x trades=409
+  [cache build    0.0s] ["calendar", "2016-01-01", "2022-01-01"]
+  [cache build    0.0s] ["market", "2016-01-01", "2022-01-01", 200]
+  [cache build   23.1s] ["data", "2016-01-01", "2022-01-01", 260]
+  [cache build    4.1s] ["rs", "2016-01-01", "2022-01-01", 260]
+  [cache build    3.1s] ["tt", "2016-01-01", "2022-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    0.6s] ["liq", "2016-01-01", "2022-01-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build   10.0s] ["setups", "2016-01-01", "2022-01-01", 260, {"base_max_days": 325, "base_max_depth": 0.35, "base_min
+[   round6] lev2_uncond                              IS2016 edge= 11.09% cagr= 28.66% dd= -32.8% sharpe= 1.05 mult=  2.15x trades=437
+[   round6] lev1                                     IS2004 edge=  7.88% cagr=  9.92% dd= -16.7% sharpe= 0.68 mult=  5.91x trades=161
+[   round6] lev1                                     IS2010 edge= -6.50% cagr=  6.07% dd= -25.2% sharpe= 0.43 mult=  0.41x trades=274
+[   round6] lev1                                     IS2016 edge= -6.02% cagr= 11.55% dd= -30.3% sharpe= 0.74 mult=  0.56x trades=273
+[   round6] lev15_regime                             IS2004 edge=  9.72% cagr= 11.77% dd= -22.7% sharpe= 0.66 mult=  7.33x trades=272
+[   round6] lev15_regime                             IS2010 edge= -3.22% cagr=  9.35% dd= -40.1% sharpe= 0.51 mult=  0.69x trades=388
+[   round6] lev15_regime                             IS2016 edge=  3.76% cagr= 21.33% dd= -28.9% sharpe= 0.98 mult=  1.33x trades=420
+[   round6] lev2_regime                              IS2004 edge= 16.06% cagr= 18.11% dd= -22.5% sharpe= 0.81 mult= 13.25x trades=280
+[   round6] lev2_regime                              IS2010 edge=  8.14% cagr= 20.71% dd= -36.9% sharpe= 0.81 mult=  2.02x trades=409
+[   round6] lev2_regime                              IS2016 edge= 11.09% cagr= 28.66% dd= -32.8% sharpe= 1.05 mult=  2.15x trades=437
+[   round6] lev2_regime_ec50                         IS2004 edge=  3.48% cagr=  5.53% dd= -24.1% sharpe= 0.35 mult=  2.94x trades=245
+[   round6] lev2_regime_ec50                         IS2010 edge=  5.97% cagr= 18.54% dd= -35.8% sharpe= 0.79 mult=  1.71x trades=343
+[   round6] lev2_regime_ec50                         IS2016 edge=  4.19% cagr= 21.76% dd= -39.7% sharpe= 0.91 mult=  1.38x trades=369
+[   round6] lev1_spy                                 IS2004 edge=  7.31% cagr=  9.36% dd= -26.1% sharpe= 0.61 mult=  5.49x trades=162
+[   round6] lev1_spy                                 IS2010 edge= -8.19% cagr=  4.39% dd= -29.9% sharpe= 0.33 mult=  0.28x trades=266
+[   round6] lev1_spy                                 IS2016 edge= -6.35% cagr= 11.22% dd= -32.4% sharpe= 0.69 mult=  0.54x trades=273
+[   round6] lev15_regime_spy                         IS2004 edge=  9.57% cagr= 11.62% dd= -28.6% sharpe= 0.64 mult=  7.21x trades=270
+[   round6] lev15_regime_spy                         IS2010 edge= -4.36% cagr=  8.21% dd= -33.2% sharpe= 0.46 mult=  0.58x trades=386
+[   round6] lev15_regime_spy                         IS2016 edge=  4.50% cagr= 22.07% dd= -30.3% sharpe= 0.99 mult=  1.41x trades=426
+[   round6] lev2_regime_spy                          IS2004 edge= 15.52% cagr= 17.56% dd= -22.8% sharpe= 0.78 mult= 12.67x trades=280
+[   round6] lev2_regime_spy                          IS2010 edge=  6.38% cagr= 18.95% dd= -33.4% sharpe= 0.76 mult=  1.77x trades=408
+[   round6] lev2_regime_spy                          IS2016 edge= 10.39% cagr= 27.96% dd= -32.6% sharpe= 1.02 mult=  2.06x trades=437
+[   round6] lev2_regime_ec50_spy                     IS2004 edge=  8.13% cagr= 10.18% dd= -29.7% sharpe= 0.52 mult=  6.09x trades=255
+[   round6] lev2_regime_ec50_spy                     IS2010 edge=  2.81% cagr= 15.39% dd= -32.7% sharpe= 0.67 mult=  1.31x trades=362
+[   round6] lev2_regime_ec50_spy                     IS2016 edge=  0.41% cagr= 17.98% dd= -37.0% sharpe= 0.78 mult=  1.03x trades=365
+
+==== round-6 best policy: lev2_uncond (score=0.0976) ====
+  [cache build    0.0s] ["calendar", "2022-01-01", "2026-08-01"]
+  [cache build    0.0s] ["market", "2022-01-01", "2026-08-01", 200]
+  [cache build   28.1s] ["data", "2022-01-01", "2026-08-01", 260]
+  [cache build    5.8s] ["rs", "2022-01-01", "2026-08-01", 260]
+  [cache build    4.1s] ["tt", "2022-01-01", "2026-08-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    0.9s] ["liq", "2022-01-01", "2026-08-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build   11.5s] ["setups", "2022-01-01", "2026-08-01", 260, {"base_max_days": 325, "base_max_depth": 0.35, "base_min
+[round6_val] lev2_uncond_OOS                          OOS    edge=-21.09% cagr= -9.34% dd= -57.4% sharpe=-0.23 mult= -0.55x trades=340
+
+---- lev2_uncond on OOS ----
+Period            : 2022-01-03 -> 2026-07-31
+Final equity      : $      63,877
+Total return      :    -36.1%   (SPY: 66.2%)
+CAGR              :    -9.34%   (SPY: 11.75%)
+Sharpe            :    -0.22
+Max drawdown      :    -57.4%   (SPY: -24.5%)
+Avg exposure      :    135.2%
+PROFIT MULTIPLE   :    -0.55x  vs SPY buy&hold
+Trades            : 340  |  win rate 21.2%  |  avg R -0.03  |  PF 0.85
+Avg win / loss    : $2,072 / $-654
+  [cache build    0.0s] ["calendar", "2004-01-01", "2026-08-01"]
+  [cache build    0.0s] ["market", "2004-01-01", "2026-08-01", 200]
+  [cache build   36.3s] ["data", "2004-01-01", "2026-08-01", 260]
+  [cache build   12.9s] ["rs", "2004-01-01", "2026-08-01", 260]
+  [cache build    6.3s] ["tt", "2004-01-01", "2026-08-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+  [cache build    1.4s] ["liq", "2004-01-01", "2026-08-01", {"min_dollar_volume": 2000000.0, "min_history_days": 260, "min_p
+  [cache build   29.5s] ["setups", "2004-01-01", "2026-08-01", 260, {"base_max_days": 325, "base_max_depth": 0.35, "base_min
+[round6_val] lev2_uncond_FULL                         FULL   edge=  4.27% cagr= 15.07% dd= -61.9% sharpe= 0.66 mult=  2.49x trades=1446
+
+---- lev2_uncond on FULL ----
+Period            : 2004-01-02 -> 2026-07-31
+Final equity      : $   2,379,629
+Total return      :   2279.6%   (SPY: 914.4%)
+CAGR              :    15.07%   (SPY: 10.81%)
+Sharpe            :     0.66
+Max drawdown      :    -61.9%   (SPY: -55.2%)
+Avg exposure      :    141.0%
+PROFIT MULTIPLE   :     2.49x  vs SPY buy&hold
+Trades            : 1446  |  win rate 27.4%  |  avg R 0.24  |  PF 1.25
+Avg win / loss    : $41,218 / $-12,432

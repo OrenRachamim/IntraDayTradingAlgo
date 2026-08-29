@@ -76,6 +76,7 @@ class ExitConfig:
     trail_ma: int = 50                # exit on close below this SMA (0 = off)
     trail_ma_bear: int = 0            # tighter trail SMA used while market regime is off (0 = same)
     trail_activation_R: float = 0.0   # arm the trail only after this gain (0 = always on)
+    fail_close_below_pivot: bool = False  # exit next open if entry-day close is back under the pivot
     time_stop_days: int = 0           # exit stagnant trades after N days (0 = off)
 
 
