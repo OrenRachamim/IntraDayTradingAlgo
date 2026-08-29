@@ -1,0 +1,9 @@
+# data files are large and reproducible via scripts/prepare_data.py
+data/
+results/*/equity.csv
+results/*/trades.csv
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
