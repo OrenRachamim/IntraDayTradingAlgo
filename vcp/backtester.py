@@ -311,10 +311,13 @@ class Backtester:
 
             if cash < 0:  # margin interest on borrowed funds
                 cash += cash * cfg.costs.margin_rate_annual / 252.0
-            elif cash > 0 and cfg.backtest.idle_cash_in_spy and t > 0:
+            elif (cash > 0 and cfg.backtest.idle_cash_in_spy and t > 0
+                  and self.market.regime_ok[t - 1]):
+                # core-satellite: idle cash rides the index, but only while the
+                # market regime is healthy (in bear regimes it stays in cash)
                 spy_prev, spy_now = self.market.close[t - 1], self.market.close[t]
                 if not (math.isnan(spy_prev) or math.isnan(spy_now)) and spy_prev > 0:
-                    cash *= spy_now / spy_prev   # core-satellite: idle cash rides the index
+                    cash *= spy_now / spy_prev
             mark_value = sum(p.last_mark * p.trade.shares for p in positions.values())
             equity_curve[t - self.start_idx] = cash + mark_value
             exposure[t - self.start_idx] = mark_value / max(cash + mark_value, 1e-9)
