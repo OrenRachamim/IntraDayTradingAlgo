@@ -45,9 +45,9 @@ FULL_START, FULL_END = "2004-01-01", "2026-08-01"
 STAGES: list[tuple[str, list[dict]]] = [
     ("quality", [
         {"entry.bo_vol_mult": bv, "entry.rank_by": rb, "tt.rs_percentile_min": rs}
-        for bv in (0.0, 1.4)
+        for bv in (1.0, 1.4, 1.8)
         for rb in ("rs", "tightness")
-        for rs in (70.0, 85.0)
+        for rs in (70.0, 80.0)
     ]),
     ("vcp_shape", [
         {"vcp.min_contractions": mc, "vcp.final_depth_max": fd,
@@ -67,14 +67,14 @@ STAGES: list[tuple[str, list[dict]]] = [
     ("exits", [
         {"exit.target_R": tr, "exit.trail_ma": tm, "exit.breakeven_at_R": be,
          "exit.trail_activation_R": ta}
-        for tr in (0.0, 5.0)
-        for tm in (50, 100, 200)
+        for tr in (0.0, 3.0, 6.0)
+        for tm in (50, 100, 150)
         for be in (0.0, 1.0)
         for ta in (0.0, 1.0)
     ]),
     ("exposure", [
         {"risk.max_positions": mp, "risk.risk_per_trade": rpt, "risk.max_weight": mw}
-        for mp in (4, 6, 8)
+        for mp in (5, 8, 10)
         for rpt in (0.02, 0.03)
         for mw in (0.25, 0.35)
     ]),
@@ -168,6 +168,8 @@ def score(rows: list[dict]) -> float:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
+    ap.add_argument("--start-from", default=None,
+                    help="JSON file of overrides to seed the search (e.g. a prior winner)")
     args = ap.parse_args()
 
     RESULTS.mkdir(exist_ok=True)
@@ -182,7 +184,10 @@ def main() -> None:
     base = load_config(ROOT / "configs" / "base.yaml")
 
     best_overrides: dict = {}
-    best_rows = run_candidate(base, {}, cache, writer, "baseline", "base")
+    if args.start_from:
+        with open(args.start_from) as fh:
+            best_overrides = json.load(fh)
+    best_rows = run_candidate(base, best_overrides, cache, writer, "baseline", "base")
 
     stages = STAGES if not args.quick else [(n, g[:4]) for n, g in STAGES]
     for stage_name, grid in stages:
