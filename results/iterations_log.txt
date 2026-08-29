@@ -16,3 +16,22 @@
 [ baseline] base                                     IS2010 mult=   1.15x cagr= 13.78% dd= -22.6% sharpe= 0.93 trades=634
 [  quality] {"entry.bo_vol_mult": 1.0, "entry.rank_by": "rs", "tt.rs_per IS2004 mult=   2.68x cagr=  5.08% dd= -36.2% sharpe= 0.43 trades=446
 [  quality] {"entry.bo_vol_mult": 1.0, "entry.rank_by": "rs", "tt.rs_per IS2010 mult=   0.39x cagr=  5.89% dd= -32.8% sharpe= 0.45 trades=720
+  [cache build    1.9s] ["tt", "2004-01-01", "2010-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+[  quality] {"entry.bo_vol_mult": 1.0, "entry.rank_by": "rs", "tt.rs_per IS2004 mult=   2.69x cagr=  5.11% dd= -24.7% sharpe= 0.43 trades=414
+  [cache build    2.3s] ["tt", "2010-01-01", "2017-01-01", 260, {"max_pct_below_52w_high": 0.25, "min_pct_above_52w_low": 0.
+[  quality] {"entry.bo_vol_mult": 1.0, "entry.rank_by": "rs", "tt.rs_per IS2010 mult=   0.55x cagr=  7.90% dd= -34.0% sharpe= 0.56 trades=681
+[  quality] {"entry.bo_vol_mult": 1.0, "entry.rank_by": "tightness", "tt IS2004 mult=   3.43x cagr=  6.32% dd= -24.5% sharpe= 0.56 trades=406
+[  quality] {"entry.bo_vol_mult": 1.0, "entry.rank_by": "tightness", "tt IS2010 mult=   0.88x cagr= 11.41% dd= -17.3% sharpe= 0.89 trades=618
+[  quality] {"entry.bo_vol_mult": 1.0, "entry.rank_by": "tightness", "tt IS2004 mult=   3.02x cagr=  5.66% dd= -23.4% sharpe= 0.49 trades=390
+[  quality] {"entry.bo_vol_mult": 1.0, "entry.rank_by": "tightness", "tt IS2010 mult=   0.37x cagr=  5.71% dd= -37.0% sharpe= 0.46 trades=643
+[  quality] {"entry.bo_vol_mult": 1.4, "entry.rank_by": "rs", "tt.rs_per IS2004 mult=   2.77x cagr=  5.23% dd= -16.1% sharpe= 0.46 trades=324
+[  quality] {"entry.bo_vol_mult": 1.4, "entry.rank_by": "rs", "tt.rs_per IS2010 mult=   0.77x cagr= 10.25% dd= -28.6% sharpe= 0.74 trades=598
+[  quality] {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt IS2004 mult=   4.47x cagr=  7.91% dd= -16.2% sharpe= 0.67 trades=345
+[  quality] {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt IS2010 mult=   0.64x cagr=  8.89% dd= -25.3% sharpe= 0.71 trades=603
+[  quality] {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt IS2004 mult=   3.39x cagr=  6.24% dd= -18.1% sharpe= 0.55 trades=316
+[  quality] {"entry.bo_vol_mult": 1.4, "entry.rank_by": "tightness", "tt IS2010 mult=   0.62x cagr=  8.72% dd= -34.0% sharpe= 0.67 trades=565
+[  quality] {"entry.bo_vol_mult": 1.8, "entry.rank_by": "rs", "tt.rs_per IS2004 mult=   2.93x cagr=  5.51% dd= -15.6% sharpe= 0.52 trades=306
+[  quality] {"entry.bo_vol_mult": 1.8, "entry.rank_by": "rs", "tt.rs_per IS2010 mult=   0.53x cagr=  7.61% dd= -36.5% sharpe= 0.59 trades=567
+[  quality] {"entry.bo_vol_mult": 1.8, "entry.rank_by": "rs", "tt.rs_per IS2004 mult=   5.81x cagr=  9.80% dd= -13.9% sharpe= 0.86 trades=242
+[  quality] {"entry.bo_vol_mult": 1.8, "entry.rank_by": "rs", "tt.rs_per IS2010 mult=   0.55x cagr=  7.90% dd= -27.9% sharpe= 0.65 trades=469
+[  quality] {"entry.bo_vol_mult": 1.8, "entry.rank_by": "tightness", "tt IS2004 mult=   3.60x cagr=  6.59% dd= -11.7% sharpe= 0.64 trades=291
